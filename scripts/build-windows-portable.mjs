@@ -76,7 +76,7 @@ Getting started
 3. Choose a gateway → choose a client → enter your own API Key → fetch and select models → import.
 4. Fully quit Claude / Codex, reopen it, and start a new session.
    If Claude stays in the system tray, quit it from the tray menu.
-5. To revert, click "Restore original configuration" in the top-right corner, choose the client, then click "Restore".
+5. To revert, choose "Use original config" from the gateway list. When more than one backup exists, select the client and confirm restoration.
 
 If it won't open
 This app uses the Microsoft Edge WebView2 Runtime. If it reports that it is missing, install the
@@ -87,7 +87,7 @@ The current version has not undergone Windows publisher code signing, so the sys
 
 Confirm the configuration took effect
 Check that the window, the model list, and the import behave correctly; after restarting the target client, send a test message,
-then use "Restore original configuration" to check that you can return to the pre-import state. Seeing "Import successful" alone does not mean the client has switched.
+then use "Use original config" to check that you can return to the pre-import state. Seeing "Import successful" alone does not mean the client has switched.
 
 Notes
 The Claude / Codex clients must be installed separately. This tool only configures the local clients of the current Windows user;
@@ -109,7 +109,7 @@ Source & license: https://github.com/TokenToAPI/TokenToAPI-connect
     run('zip', ['-q', '-r', stagedArchive, 'TokenToAPI Connect'], stage);
   }
   fs.copyFileSync(stagedArchive, path.join(release, archiveName));
-  const hashes = fs.readdirSync(release).filter(name => name.endsWith('.zip')).sort()
+  const hashes = fs.readdirSync(release).filter(name => name.startsWith(`TokenToAPI-Connect-${version}-`) && name.endsWith('.zip')).sort()
     .map(name => `${createHash('sha256').update(fs.readFileSync(path.join(release, name))).digest('hex')}  ${name}`);
   fs.writeFileSync(path.join(release, 'SHA256SUMS.txt'), hashes.join('\n') + '\n');
   console.log(`Windows x64 GUI verified; no external VC++ or WebView2Loader DLL required.`);

@@ -28,11 +28,13 @@ fn input(client: Client) -> ValidatedInput {
 fn codex_merge_keeps_comments_mcp_and_permissions_and_restores_login_exactly() {
     let home = tempfile::tempdir().unwrap();
     let paths = Paths::for_home(home.path());
-    let original="# My comment\nmodel = \"old\" # model note\napproval_policy = \"on-request\"\n\n[mcp_servers.example]\ncommand = \"my-server\"\n\n[model_providers.original]\nname = \"Original\"\n";
+    let original="# My comment\nmodel = \"old\" # model note\nmodel_reasoning_effort = \"medium\"\nplan_mode_reasoning_effort = \"xhigh\"\napproval_policy = \"on-request\"\n\n[mcp_servers.example]\ncommand = \"my-server\"\n\n[model_providers.original]\nname = \"Original\"\n";
     let auth = "{\n  \"tokens\": {\"refresh_token\": \"fake-test-oauth\"}\n}\n";
     storage::atomic_write(&paths.target(FileKind::CodexConfig), original.as_bytes()).unwrap();
     storage::atomic_write(&paths.target(FileKind::CodexAuth), auth.as_bytes()).unwrap();
-    let result = adapter::apply(&paths, input(Client::Codex)).unwrap();
+    let mut imported = input(Client::Codex);
+    imported.catalog = Some("{\"models\":[{\"slug\":\"gpt-test-codex\"}]}".into());
+    let result = adapter::apply(&paths, imported).unwrap();
     assert!(result.changed);
     let merged = fs::read_to_string(paths.target(FileKind::CodexConfig)).unwrap();
     assert!(merged.contains("# My comment"));
@@ -42,6 +44,17 @@ fn codex_merge_keeps_comments_mcp_and_permissions_and_restores_login_exactly() {
     assert!(merged.contains("[model_providers.original]"));
     let doc = merged.parse::<toml_edit::DocumentMut>().unwrap();
     assert_eq!(doc["model_provider"].as_str(), Some("tokentoapi-connect"));
+    assert!(doc.get("model_reasoning_effort").is_none());
+    assert!(doc.get("plan_mode_reasoning_effort").is_none());
+    assert_eq!(
+        doc["model_catalog_json"].as_str(),
+        Some(
+            paths
+                .target(FileKind::CodexCatalog)
+                .to_string_lossy()
+                .as_ref()
+        )
+    );
     assert_eq!(
         doc["model_providers"]["tokentoapi-connect"]["base_url"].as_str(),
         Some("https://api.example.test/v1")
@@ -83,7 +96,7 @@ fn new_install_and_repeated_import_keep_the_original_restore_point() {
 fn claude_merge_preserves_hooks_permissions_unrelated_env_and_bom() {
     let home = tempfile::tempdir().unwrap();
     let paths = Paths::for_home(home.path());
-    let original="\u{feff}{\r\n\t\"hooks\": {\"Stop\": []},\r\n\t\"permissions\": {\"allow\": [\"Read\"]},\r\n\t\"env\": {\"CUSTOM_VAR\": \"keep\", \"ANTHROPIC_API_KEY\": \"old-test\", \"CLAUDE_CODE_USE_BEDROCK\": \"1\"}\r\n}\r\n";
+    let original="\u{feff}{\r\n\t\"hooks\": {\"Stop\": []},\r\n\t\"permissions\": {\"allow\": [\"Read\"]},\r\n\t\"env\": {\"CUSTOM_VAR\": \"keep\", \"ANTHROPIC_API_KEY\": \"old-test\", \"CLAUDE_CODE_USE_BEDROCK\": \"1\", \"CLAUDE_CODE_DISABLE_THINKING\": \"1\", \"DISABLE_INTERLEAVED_THINKING\": \"1\", \"CLAUDE_CODE_ALWAYS_ENABLE_EFFORT\": \"1\", \"CLAUDE_CODE_MAX_CONTEXT_TOKENS\": \"8192\"}\r\n}\r\n";
     storage::atomic_write(&paths.target(FileKind::ClaudeSettings), original.as_bytes()).unwrap();
     adapter::apply(&paths, input(Client::Claude)).unwrap();
     let merged = fs::read_to_string(paths.target(FileKind::ClaudeSettings)).unwrap();
@@ -96,6 +109,14 @@ fn claude_merge_preserves_hooks_permissions_unrelated_env_and_bom() {
     assert_eq!(doc["env"]["CUSTOM_VAR"], "keep");
     assert!(doc["env"].get("ANTHROPIC_API_KEY").is_none());
     assert!(doc["env"].get("CLAUDE_CODE_USE_BEDROCK").is_none());
+    for key in [
+        "CLAUDE_CODE_DISABLE_THINKING",
+        "DISABLE_INTERLEAVED_THINKING",
+        "CLAUDE_CODE_ALWAYS_ENABLE_EFFORT",
+        "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
+    ] {
+        assert!(doc["env"].get(key).is_none(), "{key} was retained");
+    }
     storage::restore(&paths, Client::Claude).unwrap();
     assert_eq!(
         fs::read_to_string(paths.target(FileKind::ClaudeSettings)).unwrap(),

@@ -1,6 +1,6 @@
 # Verification Notes
 
-Verification date: 2026-10-07 (first verification for v0.1.0; the English-language v0.1.0 release was re-verified and passed on 2026-10-08). Earlier internal iterations were not published as public releases.
+Verification date: 2026-10-11 (v0.1.1). The public v0.1.0 release was previously verified on 2026-10-08.
 
 > **TokenToAPI Connect note (2026-10-07)**: this project's configuration engine, client adaptation, and test logic
 > originate from CC Switch's open-source configuration engine (MIT licensed, see [UPSTREAM.md](UPSTREAM.md)), and it has fully
@@ -18,8 +18,8 @@ Verification date: 2026-10-07 (first verification for v0.1.0; the English-langua
 ## Artifact checks
 
 - The macOS UI passed isolated import, restore, light/dark theme, and small-window checks. The public release unifies the version identity and the packaging method.
-- Windows x64 EXE checks cover the PE architecture, GUI subsystem, 0.1.0 version resources, app icon, `asInvoker` permissions, and system DLL imports. No external VC++ or WebView2Loader DLL is required; the actual UI still needs the system WebView2 Runtime.
-- The Mac package is checked for arm64, the 0.1.0 app version, and the ad-hoc signature; the ZIPs for both platforms are checked for CRC, archiver, and build artifact consistency, and SHA-256 is provided.
+- Windows x64 EXE checks cover the PE architecture, GUI subsystem, 0.1.1 version resources, app icon, `asInvoker` permissions, and system DLL imports. No external VC++ or WebView2Loader DLL is required; the actual UI still needs the system WebView2 Runtime.
+- The Mac package is checked for arm64, the 0.1.1 app version, macOS 12 minimum system version, and the ad-hoc signature; the ZIPs for both platforms are checked for CRC, archiver, and build artifact consistency, and SHA-256 is provided.
 
 ## Scope of verification
 

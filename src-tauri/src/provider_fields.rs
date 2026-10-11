@@ -52,7 +52,9 @@ pub const CLAUDE_FLOOR_ENV_KEYS: &[&str] = &[
     "CLAUDE_CODE_API_KEY_HELPER_TTL_MS",
 ];
 
-/// Whether a key in the `env` of Claude Code `settings.json` is a key field.
+/// Whether a key in the `env` of Claude Code `settings.json` belongs to the
+/// active provider. This includes compatibility switches, so a previous gateway
+/// cannot silently disable thinking or force an effort mode after an import.
 ///
 /// The frontend preset scan (`tests/config/claudeKeyFields.json`) mirrors this,
 /// and the tests below keep the two in sync.
@@ -62,6 +64,7 @@ pub fn claude_floor_env(key: &str) -> bool {
         .any(|prefix| key.starts_with(prefix))
         || CLAUDE_PROTOCOL_SELECTORS.contains(&key)
         || CLAUDE_FLOOR_ENV_KEYS.contains(&key)
+        || claude_exclusive_env(key)
         || (key.starts_with("CLAUDE_CODE_SKIP_") && key.ends_with("_AUTH"))
 }
 

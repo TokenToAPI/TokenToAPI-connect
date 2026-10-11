@@ -167,18 +167,11 @@ pub fn normalize_root(input: &str) -> Result<String, String> {
 }
 
 pub fn catalog_models(payload: &Value) -> Vec<String> {
-    let rows = payload
-        .get("data")
-        .or_else(|| payload.get("models"))
-        .and_then(Value::as_array);
+    let rows = model_rows(payload);
     let mut models = Vec::new();
     if let Some(rows) = rows {
         for row in rows.iter().take(5000) {
-            if let Some(id) = row
-                .get("id")
-                .or_else(|| row.get("slug"))
-                .and_then(Value::as_str)
-            {
+            if let Some(id) = model_identifier(row) {
                 let id = id.trim();
                 if !id.is_empty()
                     && id.len() <= 200
@@ -191,6 +184,147 @@ pub fn catalog_models(payload: &Value) -> Vec<String> {
         }
     }
     models
+}
+
+fn model_rows(payload: &Value) -> Option<&Vec<Value>> {
+    payload
+        .get("data")
+        .and_then(Value::as_array)
+        .or_else(|| payload.get("models").and_then(Value::as_array))
+}
+
+fn model_identifier(row: &Value) -> Option<&str> {
+    row.get("id")
+        .and_then(Value::as_str)
+        .or_else(|| row.get("slug").and_then(Value::as_str))
+}
+
+const KNOWN_CODEX_REASONING_MODELS: &[&str] =
+    &["gpt-5.5", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra"];
+const CODEX_MODEL_METADATA_FIELDS: &[&str] = &[
+    "display_name",
+    "description",
+    "context_window",
+    "max_context_window",
+    "effective_context_window_percent",
+    "input_modalities",
+];
+const VALID_REASONING_EFFORTS: &[&str] = &["none", "minimal", "low", "medium", "high", "xhigh"];
+const STANDARD_CODEX_REASONING_EFFORTS: &[&str] = &["low", "medium", "high", "xhigh"];
+
+fn is_reasoning_effort(value: &str) -> bool {
+    VALID_REASONING_EFFORTS.contains(&value)
+}
+
+fn reasoning_description(effort: &str) -> &'static str {
+    match effort {
+        "none" => "Disable reasoning",
+        "minimal" => "Fastest responses with minimal reasoning",
+        "low" => "Fast responses with lighter reasoning",
+        "medium" => "Balances speed and reasoning depth for everyday tasks",
+        "high" => "Greater reasoning depth for complex problems",
+        "xhigh" => "Extra high reasoning depth for complex problems",
+        _ => "",
+    }
+}
+
+fn reasoning_level(effort: &str, description: Option<&str>) -> Value {
+    json!({
+        "effort": effort,
+        "description": description
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| reasoning_description(effort)),
+    })
+}
+
+// Gateways commonly expose levels as strings, while Codex expects objects. Invalid
+// advertised values deliberately result in no options instead of an unsafe fallback.
+fn declared_reasoning_levels(value: Option<&Value>) -> Option<Vec<Value>> {
+    let value = value?;
+    let Some(values) = value.as_array() else {
+        return Some(Vec::new());
+    };
+    let mut levels = Vec::new();
+    for value in values {
+        let (effort, description) = match value {
+            Value::String(effort) => (effort.as_str(), None),
+            Value::Object(object) => (
+                object
+                    .get("effort")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default(),
+                object.get("description").and_then(Value::as_str),
+            ),
+            _ => continue,
+        };
+        if is_reasoning_effort(effort)
+            && !levels.iter().any(|level: &Value| level["effort"] == effort)
+        {
+            levels.push(reasoning_level(effort, description));
+        }
+    }
+    Some(levels)
+}
+
+fn reasoning_capabilities(
+    id: &str,
+    original: Option<&serde_json::Map<String, Value>>,
+) -> (Value, Value) {
+    let declared =
+        original.and_then(|row| declared_reasoning_levels(row.get("supported_reasoning_levels")));
+    let levels = declared.unwrap_or_else(|| {
+        if KNOWN_CODEX_REASONING_MODELS
+            .iter()
+            .any(|known| known.eq_ignore_ascii_case(id))
+        {
+            STANDARD_CODEX_REASONING_EFFORTS
+                .iter()
+                .map(|effort| reasoning_level(effort, None))
+                .collect()
+        } else {
+            Vec::new()
+        }
+    });
+    let default = original
+        .and_then(|row| row.get("default_reasoning_level"))
+        .and_then(Value::as_str)
+        .filter(|effort| levels.iter().any(|level| level["effort"] == *effort))
+        .or_else(|| {
+            levels
+                .iter()
+                .find(|level| level["effort"] == "medium")
+                .and_then(|level| level["effort"].as_str())
+        })
+        .or_else(|| levels.first().and_then(|level| level["effort"].as_str()));
+    (
+        default.map_or(Value::Null, |effort| json!(effort)),
+        Value::Array(levels),
+    )
+}
+
+fn bounded_u64(value: Option<&Value>, minimum: u64, maximum: u64) -> Option<u64> {
+    value
+        .and_then(Value::as_u64)
+        .filter(|value| (minimum..=maximum).contains(value))
+}
+
+fn normalize_catalog_shape(row: &mut Value) {
+    let context_window =
+        bounded_u64(row.get("context_window"), 1024, 16 * 1024 * 1024).unwrap_or(32768);
+    row["context_window"] = json!(context_window);
+    let max_context_window = bounded_u64(row.get("max_context_window"), 1024, 16 * 1024 * 1024)
+        .unwrap_or(context_window)
+        .max(context_window);
+    row["max_context_window"] = json!(max_context_window);
+    let percent = bounded_u64(row.get("effective_context_window_percent"), 1, 100).unwrap_or(95);
+    row["effective_context_window_percent"] = json!(percent);
+    if !row.get("input_modalities").is_some_and(|value| {
+        value.as_array().is_some_and(|items| {
+            !items.is_empty() && items.iter().all(|item| item.as_str().is_some())
+        })
+    }) {
+        row["input_modalities"] = json!(["text"]);
+    }
 }
 
 pub async fn discover(input: DiscoveryInput) -> Result<DiscoveredModels, String> {
@@ -262,12 +396,8 @@ pub async fn discover(input: DiscoveryInput) -> Result<DiscoveredModels, String>
         .map(|id| {
             let label = rows
                 .and_then(|rows| {
-                    rows.iter().find(|row| {
-                        row.get("id")
-                            .or_else(|| row.get("slug"))
-                            .and_then(Value::as_str)
-                            .is_some_and(|v| v.trim() == id)
-                    })
+                    rows.iter()
+                        .find(|row| model_identifier(row).is_some_and(|v| v.trim() == id))
                 })
                 .and_then(|row| row.get("display_name").or_else(|| row.get("name")))
                 .and_then(Value::as_str)
@@ -330,7 +460,7 @@ pub fn build_codex_catalog(payload: &Value, selected: &[String]) -> Result<Strin
         "resources/codex_native_responses_template.json"
     ))
     .map_err(|_| "The model catalog template is unavailable.")?;
-    let source = payload.get("models").and_then(Value::as_array);
+    let source = model_rows(payload);
     let entries: Vec<Value> = selected
         .iter()
         .enumerate()
@@ -340,28 +470,28 @@ pub fn build_codex_catalog(payload: &Value, selected: &[String]) -> Result<Strin
             row["context_window"] = json!(32768);
             row["max_context_window"] = json!(32768);
             row["input_modalities"] = json!(["text"]);
-            row["default_reasoning_level"] = Value::Null;
-            row["supported_reasoning_levels"] = json!([]);
             row["supports_reasoning_summaries"] = json!(false);
-            if let Some(original) = source
+            let original = source
                 .and_then(|rows| {
-                    rows.iter()
-                        .find(|m| m.get("slug").and_then(Value::as_str) == Some(id))
+                    rows.iter().find(|model| {
+                        model_identifier(model).is_some_and(|candidate| candidate.trim() == id)
+                    })
                 })
-                .and_then(Value::as_object)
-            {
-                for (key, value) in original {
-                    row[key] = value.clone();
-                }
-                if !original.contains_key("max_context_window") {
-                    row["max_context_window"] = row["context_window"].clone();
+                .and_then(Value::as_object);
+            if let Some(original) = original {
+                for key in CODEX_MODEL_METADATA_FIELDS {
+                    if let Some(value) = original.get(*key) {
+                        row[*key] = value.clone();
+                    }
                 }
             }
+            normalize_catalog_shape(&mut row);
+            let (default_reasoning_level, supported_reasoning_levels) =
+                reasoning_capabilities(id, original);
+            row["default_reasoning_level"] = default_reasoning_level;
+            row["supported_reasoning_levels"] = supported_reasoning_levels;
             row["slug"] = json!(id);
-            if source.is_none() {
-                row["display_name"] = json!(id);
-                row["description"] = json!(id);
-            } else if row["display_name"] == template["display_name"] {
+            if source.is_none() || row["display_name"] == template["display_name"] {
                 row["display_name"] = json!(id);
                 row["description"] = json!(id);
             }

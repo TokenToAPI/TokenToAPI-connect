@@ -118,7 +118,7 @@ fn desktop_restore_preserves_later_user_edits() {
 fn vscode_updates_login_environment_preserves_jsonc_and_restores_both_files() {
     let home = tempfile::tempdir().unwrap();
     let paths = Paths::for_home(home.path());
-    let original="{\n  // keep user comments and URL\n  \"editor.fontSize\": 15,\n  \"custom.url\": \"https://example.test/a//b\",\n  \"claudeCode.environmentVariables\": [\n    {\"name\":\"ANTHROPIC_API_KEY\",\"value\":\"old-fake\"},\n    {\"name\":\"CLAUDE_CODE_USE_BEDROCK\",\"value\":\"1\"},\n    {\"name\":\"KEEP_ME\",\"value\":\"yes\"},\n  ],\n}\n";
+    let original="{\n  // keep user comments and URL\n  \"editor.fontSize\": 15,\n  \"custom.url\": \"https://example.test/a//b\",\n  \"claudeCode.environmentVariables\": [\n    {\"name\":\"ANTHROPIC_API_KEY\",\"value\":\"old-fake\"},\n    {\"name\":\"CLAUDE_CODE_USE_BEDROCK\",\"value\":\"1\"},\n    {\"name\":\"CLAUDE_CODE_DISABLE_THINKING\",\"value\":\"1\"},\n    {\"name\":\"DISABLE_INTERLEAVED_THINKING\",\"value\":\"1\"},\n    {\"name\":\"CLAUDE_CODE_ALWAYS_ENABLE_EFFORT\",\"value\":\"1\"},\n    {\"name\":\"KEEP_ME\",\"value\":\"yes\"},\n  ],\n}\n";
     write(&paths, FileKind::ClaudeVscode, original);
     adapter::apply(&paths, input(Client::ClaudeVscode)).unwrap();
     let text = fs::read_to_string(paths.target(FileKind::ClaudeVscode)).unwrap();
@@ -134,9 +134,18 @@ fn vscode_updates_login_environment_preserves_jsonc_and_restores_both_files() {
     assert!(vars
         .iter()
         .any(|v| v["name"] == "KEEP_ME" && v["value"] == "yes"));
-    assert!(!vars
-        .iter()
-        .any(|v| v["name"] == "ANTHROPIC_API_KEY" || v["name"] == "CLAUDE_CODE_USE_BEDROCK"));
+    for name in [
+        "ANTHROPIC_API_KEY",
+        "CLAUDE_CODE_USE_BEDROCK",
+        "CLAUDE_CODE_DISABLE_THINKING",
+        "DISABLE_INTERLEAVED_THINKING",
+        "CLAUDE_CODE_ALWAYS_ENABLE_EFFORT",
+    ] {
+        assert!(
+            !vars.iter().any(|v| v["name"] == name),
+            "{name} was retained"
+        );
+    }
     assert_eq!(
         read(&paths, FileKind::ClaudeSettings)["model"],
         "claude-opus-test"

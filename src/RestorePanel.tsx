@@ -202,7 +202,7 @@ export default function RestorePanel({
           <p className="restore-status">
             {nativeAvailable
               ? "No config can be restored right now."
-              : "Use the restore feature in the desktop app."}
+              : "This browser preview cannot restore local configuration. Open the desktop app to restore it."}
           </p>
         ) : null}
         {problem && (

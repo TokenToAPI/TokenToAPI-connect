@@ -22,6 +22,9 @@ const source = path.join(root, 'src-tauri/target', target, 'release/bundle/macos
 const actual = run('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleShortVersionString', path.join(source, 'Contents/Info.plist')],
   { encoding: 'utf8', stdio: 'pipe' }).trim();
 if (actual !== version) throw new Error('App version does not match package.json');
+const minimumSystemVersion = run('/usr/libexec/PlistBuddy', ['-c', 'Print :LSMinimumSystemVersion', path.join(source, 'Contents/Info.plist')],
+  { encoding: 'utf8', stdio: 'pipe' }).trim();
+if (minimumSystemVersion !== '12.0') throw new Error('Expected a macOS 12.0 minimum system version');
 const binary = fs.readFileSync(path.join(source, 'Contents/MacOS/tokentoapi-connect'));
 if (binary.readUInt32LE(0) !== 0xfeedfacf || binary.readUInt32LE(4) !== 0x0100000c) {
   throw new Error('Expected an Apple Silicon executable');
@@ -39,12 +42,12 @@ try {
   fs.cpSync(path.join(root, 'licenses'), path.join(folder, 'licenses'), { recursive: true });
   run('/usr/bin/codesign', ['--force', '--deep', '--sign', '-', app]);
   run('/usr/bin/codesign', ['--verify', '--deep', '--strict', app]);
-  fs.writeFileSync(path.join(folder, 'README.txt'), `TokenToAPI Connect ${version} · macOS Apple Silicon
+  fs.writeFileSync(path.join(folder, 'README.txt'), `TokenToAPI Connect ${version} · macOS 12+ · Apple Silicon
 
 After extracting, open TokenToAPI Connect.app; you can also drag it into the Applications folder.
 Choose a gateway → choose a client → enter your API Key → fetch and select models → import.
 After importing, fully quit the target client, then reopen it and start a new session.
-To revert, click "Restore original configuration" in the top-right corner.
+To revert, choose "Use original config" from the gateway list.
 
 This package uses an ad-hoc signature and has not yet completed Apple Developer ID signing or notarization.
 If the system blocks it, first confirm that you downloaded it from this project's GitHub Release, then follow the system prompt.
@@ -56,7 +59,7 @@ Latest verification notes: https://github.com/TokenToAPI/TokenToAPI-connect/blob
   const archive = path.join(stage, name);
   run('/usr/bin/ditto', ['-c', '-k', '--norsrc', '--keepParent', folder, archive]);
   fs.copyFileSync(archive, path.join(release, name));
-  const hashes = fs.readdirSync(release).filter(name => name.endsWith('.zip')).sort()
+  const hashes = fs.readdirSync(release).filter(name => name.startsWith(`TokenToAPI-Connect-${version}-`) && name.endsWith('.zip')).sort()
     .map(name => `${createHash('sha256').update(fs.readFileSync(path.join(release, name))).digest('hex')}  ${name}`);
   fs.writeFileSync(path.join(release, 'SHA256SUMS.txt'), hashes.join('\n') + '\n');
   console.log(`Packaged: ${path.join(release, name)}`);

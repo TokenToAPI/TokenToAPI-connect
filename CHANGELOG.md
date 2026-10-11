@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.1 - 2026-10-11
+
+- Fixed Codex reasoning-level catalogs for OpenAI-style and gateway-native model discovery responses, including gateway-provided capability metadata.
+- Removed stale Codex and Claude compatibility switches during imports so they cannot force or disable reasoning after switching gateways.
+- Moved restoration to the gateway list, with immediate restoration for a single unchanged backup and confirmation when local changes require review.
+- Made successful imports clearer by showing the configured route, default model, imported model count, and client restart requirement.
+- Restricted gateway model metadata to safe display and capability fields; gateway responses can no longer replace Codex instructions or tool settings.
+- Corrected macOS compatibility documentation and package validation to macOS 12+ on Apple Silicon.
+- Declared Node.js 22+ and pinned the development version to Node.js 22.23.3.
+
 ## v0.1.0 — 2026-10-08
 
 First official public release.

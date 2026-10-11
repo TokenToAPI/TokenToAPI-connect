@@ -31,7 +31,9 @@ import {
   discoverModels,
   importConfig,
   nativeAvailable,
+  readRestorePoints,
   readStatus,
+  restoreConfig,
   type Client,
   type DiscoveryResult,
   type ImportResult,
@@ -162,6 +164,7 @@ export default function App() {
     DEFAULT_STATION;
   const selectedClient = clients.find((item) => item.id === client)!;
   const clientStatus = status?.clients.find((item) => item.client === client);
+  const hasRestorePoint = status?.clients.some((item) => item.hasBackup) ?? false;
   const disabled = busy !== null;
   const family = clientFamily(client);
   const matching =
@@ -291,7 +294,44 @@ export default function App() {
     setRestored(true);
     setStep(0);
     setFurthest(0);
-    await refresh();
+    try {
+      await refresh();
+    } catch {
+      setError("Configuration restored. Reopen the app to refresh the status.");
+    }
+  }
+  async function restoreOriginal() {
+    if (disabled) return;
+    if (!nativeAvailable) {
+      setShowRestore(true);
+      return;
+    }
+    setBusy("restore");
+    setError("");
+    try {
+      const points = await readRestorePoints();
+      const available = points.filter((point) => point.available);
+      const safe = available.filter(
+        (point) =>
+          point.reviewId &&
+          !point.files.some((file) => file.modifiedSinceImport),
+      );
+      if (available.length !== 1 || safe.length !== 1) {
+        setShowRestore(true);
+        return;
+      }
+      const point = safe[0];
+      const restored = await restoreConfig(point.client, point.reviewId!, false);
+      await restoredClient(restored.client);
+    } catch (error) {
+      setError(
+        typeof error === "string"
+          ? error
+          : "Restore didn't finish. Check the saved configuration and try again.",
+      );
+    } finally {
+      setBusy(null);
+    }
   }
   function startAgain() {
     clearDiscovery();
@@ -299,7 +339,12 @@ export default function App() {
     setVisible(false);
     setStep(0);
     setFurthest(0);
-    setPreferences((current) => ({ ...current, selected: DEFAULT_STATION.id }));
+    const next = { ...preferences, selected: DEFAULT_STATION.id };
+    setPreferences(next);
+    if (!saveStationPreferences(next))
+      setError(
+        "The default gateway was selected for this session, but couldn't be saved on this device.",
+      );
   }
   function toggleModel(id: string, checked: boolean) {
     setSelection((current) =>
@@ -321,14 +366,6 @@ export default function App() {
           <span className="brand-product">Connect</span>
         </div>
         <div className="header-actions">
-          <button
-            className="restore-header-button"
-            onClick={() => setShowRestore(true)}
-            disabled={disabled}
-          >
-            <RotateCcw size={15} />
-            <span>Restore original config</span>
-          </button>
           <button
             className="icon-button theme-button"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
@@ -393,22 +430,41 @@ export default function App() {
           aria-busy={disabled}
         >
           {result ? (
-            <div className="success-content" role="status">
-              <span className="success-mark">
-                <Check size={28} strokeWidth={1.7} />
-              </span>
-              <h2 id="step-title" ref={heading} tabIndex={-1}>
-                Configuration written. Restart the client to apply.
-              </h2>
-              <p>{selectedClient.name} · gateway and selected models saved</p>
-              <div className="result-summary">
+            <div className="wizard-stage success-content" role="status">
+              <div className="success-hero">
+                <span className="success-mark" aria-hidden="true">
+                  <Check size={28} strokeWidth={1.9} />
+                </span>
+                <div>
+                  <span className="success-kicker">Connected</span>
+                  <h2 id="step-title" ref={heading} tabIndex={-1}>
+                    {selectedClient.name} is configured
+                  </h2>
+                  <p>Your local configuration was saved successfully.</p>
+                </div>
+              </div>
+              <div className="connection-confirmation">
+                <span className="connection-confirmation-label">Active connection</span>
+                <div className="connection-confirmation-route">
+                  <span>{station.name}</span>
+                  <ArrowRight size={15} aria-hidden="true" />
+                  <strong>{selectedClient.name}</strong>
+                </div>
+                <span className="connection-confirmation-model">
+                  Default model <b className="mono">{result.model}</b>
+                </span>
+              </div>
+              <div className="restart-callout">
+                <RotateCcw size={17} aria-hidden="true" />
+                <p>
+                  <strong>Restart {selectedClient.name}</strong>
+                  <span>It will load this gateway and model selection when it reopens.</span>
+                </p>
+              </div>
+              <div className="result-summary" aria-label="Configuration details">
                 <div>
                   <span>Gateway</span>
                   <strong>{station.name}</strong>
-                </div>
-                <div>
-                  <span>Default model</span>
-                  <strong className="mono">{result.model}</strong>
                 </div>
                 <div>
                   <span>Imported models</span>
@@ -421,7 +477,7 @@ export default function App() {
                 ))}
               </div>
               <div className="activation-guide">
-                <strong>Next steps</strong>
+                <strong>After restarting</strong>
                 <ol>
                   {result.nextSteps.map((text) => (
                     <li key={text}>{text}</li>
@@ -439,7 +495,7 @@ export default function App() {
               )}
             </div>
           ) : (
-            <>
+            <div className="wizard-stage" key={step}>
               <div className="card-heading">
                 <span className="eyebrow">
                   STEP 0{step + 1} <span>/ 04</span>
@@ -523,6 +579,34 @@ export default function App() {
                       </div>
                     ))}
                   </fieldset>
+                  <button
+                    className="restore-station"
+                    onClick={() => void restoreOriginal()}
+                    disabled={disabled || (!!status && !hasRestorePoint)}
+                  >
+                    <span className="restore-station-icon" aria-hidden="true">
+                      {busy === "restore" ? (
+                        <LoaderCircle className="spinning" size={21} strokeWidth={1.7} />
+                      ) : (
+                        <RotateCcw size={21} strokeWidth={1.7} />
+                      )}
+                    </span>
+                    <span className="restore-station-copy">
+                      <strong>
+                        {busy === "restore"
+                          ? "Restoring original config"
+                          : "Use original config"}
+                      </strong>
+                      <small>
+                        {busy === "restore"
+                          ? "Writing the saved configuration back to your client"
+                          : status && !hasRestorePoint
+                          ? "No saved client config is available yet"
+                          : "Switch back immediately when one saved config is available"}
+                      </small>
+                    </span>
+                    <ChevronRight size={17} aria-hidden="true" />
+                  </button>
                   <button
                     className="add-station"
                     onClick={() => setEditing(null)}
@@ -858,14 +942,17 @@ export default function App() {
                   </p>
                 </div>
               )}
-            </>
+            </div>
           )}
           {(error || clientStatus?.pending || restored) && (
             <div className="feedback-area">
               {clientStatus?.pending && (
                 <div className="notice notice-error" role="alert">
                   <CircleAlert size={16} />
-                  <p>The last import was interrupted. Restore the config from the entry below first.</p>
+                  <p>
+                    The last import was interrupted. Use original config from the
+                    Gateway list before continuing.
+                  </p>
                 </div>
               )}
               {error && (
@@ -982,16 +1069,6 @@ export default function App() {
             <ShieldCheck size={14} />
             Original config backed up automatically before import
           </span>
-          {clientStatus?.hasBackup && (
-            <button
-              className="text-button"
-              onClick={() => setShowRestore(true)}
-              disabled={disabled}
-            >
-              <RotateCcw size={13} />
-              Restore {selectedClient.name} config
-            </button>
-          )}
         </div>
       </div>
       <footer className="app-footer">
