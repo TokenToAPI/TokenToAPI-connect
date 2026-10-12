@@ -55,6 +55,10 @@ before Windows work, separate from automated local fixture checks.
   platform, prepare a fresh link, and retry. v0.1.2 is not a handoff-compatible
   substitute. Manual setup remains available.
 
+## Acceptance confirmation
+
+On 2026-10-12, Kendrick confirmed that both he and YC tested the deployed update and that everything works. Both overall Mac acceptance results are accepted based on that report; detailed environment versions and individual checklist results were not supplied.
+
 ## Result record
 
 | Field | Kendrick | YC |
@@ -70,7 +74,7 @@ before Windows work, separate from automated local fixture checks.
 | Expiry / retry / cancellation | Pending | Pending |
 | Restore / queued handoff | Pending | Pending |
 | Home-page spacing | Pending | Pending |
-| Overall result | Pending | Pending |
+| Overall result | Passed — user reported | Passed — reported by Kendrick |
 
 Report exact steps, versions, and a redacted screenshot/error when a check
 fails. Never put API keys, handoff links/codes, authentication files, or restore
