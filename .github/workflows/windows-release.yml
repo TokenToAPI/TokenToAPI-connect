@@ -18,6 +18,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: rustup update stable
       - run: rustup component add rustfmt clippy
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: windows-rust-${{ hashFiles('src-tauri/Cargo.lock') }}
       - run: pnpm test:ui
       - run: pnpm test:lifecycle
       - run: pnpm check

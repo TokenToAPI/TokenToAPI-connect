@@ -41,7 +41,7 @@ try {
   proc=spawn(exe,[],{env:process.env,stdio:'ignore'});
   await connect();
   await until(()=>evaluate(`document.body.innerText.includes('Use original config')`),'home render');
-  const command=ps(`(Get-Item 'HKCU:\Software\Classes\tokentoapi-connect\shell\open\command').GetValue('')`).trim();
+  const command=ps(String.raw`(Get-Item 'HKCU:\Software\Classes\tokentoapi-connect\shell\open\command').GetValue('')`).trim();
   assert(command.includes('"'+exe+'"'), 'Protocol must quote the portable EXE path');
   assert(command.includes('%1'), 'Protocol must forward the URL');
   openLink('https://warm.example.test');await dialog('https://warm.example.test');await cancel();
