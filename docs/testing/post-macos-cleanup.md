@@ -1,6 +1,6 @@
 # Cleanup reminder after Kendrick and YC finish testing
 
-Status: **cleanup authorized on 2026-10-12**. Kendrick confirmed both Mac acceptance results and explicitly requested cleanup after Windows publication and platform deployment. Preserve the accepted release and real configurations. Record actual reclaimed disk space in the completion report.
+Status: **cleanup completed on 2026-10-12**. Kendrick confirmed both Mac acceptance results and explicitly requested cleanup after Windows publication and platform deployment. Preserve the accepted release and real configurations. Removed task files totaling about 15.9 GiB (toolchains, both merged test worktrees and temporary fixtures/downloads/logs/binaries), plus the three Docker test images totaling about 542.6 MB. Docker now reports zero images, containers, volumes and build cache. Filesystem/Docker VM reclamation may differ from these logical sizes. The primary checkouts, published Mac/Windows ZIPs, installed applications, credentials and real client configurations were preserved.
 
 ## Inventory recorded before publication (2026-10-12)
 
