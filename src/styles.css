@@ -444,7 +444,13 @@ strong {
   padding: 25px 29px 27px;
   min-height: 260px;
 }
+.station-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .station-list {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -582,7 +588,7 @@ strong {
   gap: 15px;
   width: 100%;
   padding: 17px 19px;
-  margin-top: 12px;
+  margin-top: 0;
   border: 1px dashed var(--line);
   border-radius: 10px;
   background: transparent;

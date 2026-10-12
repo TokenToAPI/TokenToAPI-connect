@@ -4,11 +4,16 @@ Prepared on 2026-10-12. This is a local candidate, not a published release.
 
 - 67 Rust core tests pass, including strict handoff parsing, replay-sensitive redemption fixtures, error redaction, native credential retention and cancellation.
 - 12 frontend state tests and 3 App/RestorePanel lifecycle tests pass. TypeScript, frontend build, desktop Rust compilation and Clippy pass.
-- A separately identified debug app uses a temporary home and fake fixture key for browser import/restore checks. Microsoft Edge app-opening, gateway review, model fetching, import and restore are verified in that isolated environment.
+- Home-page cards now use a consistent 10px gap; verified in Microsoft Edge and the native window.
+- A separately identified debug app uses a temporary home and fake fixture key for browser import/restore checks. Microsoft Edge app-opening, gateway review, model fetching, cold/running-app receipt, import, cancellation and restore are verified in that isolated environment. Three real configuration file hashes stayed unchanged.
 - Regression checks cover mixed-group client choice, Claude Code-only restrictions, queued imports during restore, normalized unsupported-group errors, and configured-to-empty gateway changes.
 - The macOS arm64 candidate is built locally. Signature, version, protocol registration and archive integrity are checked before handover. It remains ad-hoc signed and not Developer ID notarized.
 - Windows runtime and portable protocol registration have not been executed on Windows for this candidate. Its package remains a release-preparation step; do not imply that the macOS test validates Windows.
-- Platform frontend tests pass; its focused handoff backend tests and build pass. Four unrelated account-management test failures reproduce in the unchanged platform checkout and remain reported separately.
+- Platform frontend tests pass (2,687); full backend unit and Docker-backed PostgreSQL/Redis integration suites pass after stale password fixtures were corrected without changing production policy. The previous four account-test failures and five more found by broader coverage are resolved.
+
+Candidate SHA-256: `118966045b8c903d555debe5ce2db35ce642f9ea1cb770faa515cf1e44076740`. This package was built from the local working tree, including uncommitted spacing edits; rebuild and regenerate the checksum from the final committed source before publication.
+
+The [GitHub release preparation notes](docs/releases/v0.1.3-macos.md) and [Kendrick/YC acceptance checklist](docs/testing/macos-acceptance.md) are ready. Both live Mac results remain Pending; Windows follows those results.
 
 For the isolated handoff fixture, run scripts/mock-gateway.py and open
 http://127.0.0.1:18473/fixture/launch. Loopback HTTP handoffs work only in an

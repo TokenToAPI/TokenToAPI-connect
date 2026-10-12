@@ -7,6 +7,9 @@
 - Prefills gateway and client, fetches models, and requires Import before changing configuration.
 - Supports cold and running-app handoffs, unfamiliar-platform review, retry, and cancellation.
 - Keeps the imported gateway name in the success summary and preserves existing backup/restore behavior.
+- Enforces authoritative allowed clients for mixed and Claude Code-only groups; queues imports while restore review is open.
+- Adds consistent spacing between the home-page gateway, restore and add-gateway cards.
+- Prepares macOS release notes and separate acceptance checks for Kendrick and YC; Windows follows their Mac validation.
 
 
 ## v0.1.2 - 2026-10-12

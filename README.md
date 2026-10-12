@@ -4,9 +4,9 @@
 
 A simple local API configurator. Choose a gateway, pick Claude or Codex, enter your API Key, select the models you need, and import.
 
-**v0.1.3 · Release candidate** · [Download](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.2) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
+**v0.1.3 · macOS release candidate** · [Published v0.1.2 downloads](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.2) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
 
-## Download & usage
+## Current published downloads (v0.1.2)
 
 | Platform | Download | How to open |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ A simple local API configurator. Choose a gateway, pick Claude or Codex, enter y
 
 Downloads from the official website and this page both come directly from [GitHub Releases](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.2). The [SHA-256 checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.2/SHA256SUMS.txt) are also under the same release.
 
-**Automated tests and artifact checks have all passed**; see [Verification notes](VERIFICATION.md) for the detailed scope.
+The macOS v0.1.3 candidate is separate from the published v0.1.2 downloads above. See [verification notes](VERIFICATION.md), [draft release notes](docs/releases/v0.1.3-macos.md), and [the two-Mac acceptance checklist](docs/testing/macos-acceptance.md). Windows v0.1.3 validation follows Mac acceptance.
 
 No Node.js or Rust installation is required at runtime. The macOS package is for Apple Silicon Macs and uses an ad-hoc signature; it has not yet completed Apple Developer ID signing or notarization, so macOS may require confirmation before opening it. Windows uses the system WebView2 Runtime; if it is missing, install it from the [Microsoft website](https://developer.microsoft.com/microsoft-edge/webview2/) as prompted by the app. Checksums are in the release's `SHA256SUMS.txt`. The Windows portable package does not require installation or the VC++ Redistributable, but it is not yet publisher-signed, so Windows may show an unknown-publisher or SmartScreen warning.
 
