@@ -73,7 +73,7 @@ Works on: Windows 10 / 11, 64-bit Intel / AMD computers.
 Getting started
 1. First extract the entire archive into a folder.
 2. Double-click "TokenToAPI Connect.exe". No administrator rights are needed, and no Node.js or Rust installation is required.
-3. Choose a gateway → choose a client → enter your own API Key → fetch and select models → import.
+3. Opening the app once registers platform imports for this Windows user. On TokenToAPI, choose "Import to Connect", review the models, then click Import. Manual gateway/key setup remains available.
 4. Fully quit Claude / Codex, reopen it, and start a new session.
    If Claude stays in the system tray, quit it from the tray menu.
 5. To revert, choose "Use original config" from the gateway list. When more than one backup exists, select the client and confirm restoration.
@@ -92,6 +92,7 @@ then use "Use original config" to check that you can return to the pre-import st
 Notes
 The Claude / Codex clients must be installed separately. This tool only configures the local clients of the current Windows user;
 WSL and remote development environments have their own configuration and must be set up in their own environments.
+Keep the extracted folder in a permanent location. If you move it, open the EXE once again before using platform imports.
 The app does not stay resident after closing. Configuration and restore records are stored in the current user directory; deleting the EXE does not restore the configuration automatically.
 ${process.platform === 'win32' ? 'This package was built on Windows.' : 'This package was cross-compiled on another system.'}Test scope:
 https://github.com/TokenToAPI/TokenToAPI-connect/blob/main/VERIFICATION.md
