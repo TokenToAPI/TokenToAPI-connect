@@ -1974,3 +1974,8 @@ strong {
     max-height: 280px;
   }
 }
+
+.handoff-address { overflow-wrap: anywhere; padding: 14px; border-radius: 12px; background: var(--surface-2, #eef2f4); color: var(--text, #17252f); }
+.handoff-banner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+.handoff-banner div { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.handoff-banner select { max-width: 220px; padding: 6px; border-radius: 6px; }

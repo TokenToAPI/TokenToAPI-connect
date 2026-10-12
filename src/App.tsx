@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import {
   discoverModels,
+  acceptHandoff, cancelHandoff, discoverHandoffModels, pendingHandoff, watchHandoffs,
+  type PendingHandoff, type HandoffSetup,
   importConfig,
   nativeAvailable,
   readRestorePoints,
@@ -55,6 +57,8 @@ import {
 } from "./selection";
 import StationEditor from "./StationEditor";
 import RestorePanel from "./RestorePanel";
+import HandoffPanel from "./HandoffPanel";
+import { handoffSelection, shouldAutoAccept } from "./handoff";
 import { version } from "../package.json";
 
 const steps = ["Gateway", "Client", "API Key", "Select models"];
@@ -148,7 +152,7 @@ export default function App() {
   const [selection, setSelection] = useState<ModelSelection>(EMPTY_SELECTION);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<Status | null>(null);
-  const [busy, setBusy] = useState<"discover" | "import" | "restore" | null>(
+  const [busy, setBusy] = useState<"discover" | "import" | "restore" | "handoff" | null>(
     null,
   );
   const [error, setError] = useState("");
@@ -156,9 +160,14 @@ export default function App() {
   const [restored, setRestored] = useState(false);
   const [showRestore, setShowRestore] = useState(false);
   const [about, setAbout] = useState(false);
+  const [pendingImport, setPendingImport] = useState<PendingHandoff | null>(null);
+  const [handoffSetup, setHandoffSetup] = useState<HandoffSetup | null>(null);
+  const [gatewayReview, setGatewayReview] = useState(false);
+  const [handoffError, setHandoffError] = useState("");
+  const attemptedHandoff = useRef("");
   const heading = useRef<HTMLHeadingElement>(null);
   const stations = [DEFAULT_STATION, ...preferences.custom];
-  const station =
+  const station = handoffSetup ? { id: "platform-import", name: handoffSetup.providerName, baseUrl: handoffSetup.baseUrl } :
     stations.find((item) => item.id === preferences.selected) ??
     DEFAULT_STATION;
   const selectedClient = clients.find((item) => item.id === client)!;
@@ -178,6 +187,72 @@ export default function App() {
   const allMatchingSelected =
     selectableMatching.length > 0 &&
     selectableMatching.every((model) => selection.ids.includes(model.id));
+
+  const hasSetupWork = step > 0 || !!apiKey || !!discovery || !!result || editing !== undefined || !!handoffSetup;
+  useEffect(() => {
+    if (!nativeAvailable) return;
+    let disposed = false;
+    let stop: (() => void) | undefined;
+    const read = async () => {
+      try {
+        const pending = await pendingHandoff();
+        if (!disposed) setPendingImport(pending);
+      } catch { if (!disposed) setHandoffError("Could not read the platform import. Reopen Connect and retry."); }
+    };
+    watchHandoffs(() => { void read(); }).then(unlisten => {
+      if (disposed) unlisten(); else { stop = unlisten; void read(); }
+    }).catch(() => { if (!disposed) setHandoffError("Could not listen for platform imports. Reopen Connect."); });
+    return () => { disposed = true; stop?.(); };
+  }, []);
+  useEffect(() => {
+    if (pendingImport && attemptedHandoff.current !== pendingImport.requestId && shouldAutoAccept(pendingImport.knownIssuer, disabled, hasSetupWork)) {
+      attemptedHandoff.current = pendingImport.requestId;
+      void receivePlatformImport(pendingImport);
+    }
+  }, [pendingImport, disabled, hasSetupWork]);
+
+  async function loadPlatformModels(setup: HandoffSetup, target: Client) {
+    const fetched = await discoverHandoffModels(setup.requestId, target);
+    setDiscovery(fetched);
+    setSelection(handoffSelection(target, fetched.models));
+    setClient(target); setStep(3); setFurthest(3); setQuery(""); setError("");
+  }
+  async function receivePlatformImport(pending: PendingHandoff) {
+    if (disabled) return;
+    setBusy("handoff"); setHandoffError("");
+    try {
+      const setup = await acceptHandoff(pending.requestId);
+      setApiKey(""); setVisible(false); setDiscovery(null); setSelection(EMPTY_SELECTION);
+      setResult(null); setEditing(undefined); setRestored(false);
+      setHandoffSetup(setup); setPendingImport(null); setGatewayReview(setup.gatewayNeedsReview);
+      const target: Client = setup.suggestedClient === "codex" ? "codex-desktop" : "claude";
+      setClient(target);
+      if (!setup.gatewayNeedsReview) await loadPlatformModels(setup, target);
+    } catch (cause) {
+      setHandoffError(typeof cause === "string" ? cause : "Return to the platform and prepare a new import link.");
+    } finally { setBusy(null); }
+  }
+  async function fetchPlatformModels(target: Client = client) {
+    if (!handoffSetup || disabled) return;
+    setBusy("discover"); setHandoffError("");
+    try { await loadPlatformModels(handoffSetup, target); setGatewayReview(false); }
+    catch (cause) { setHandoffError(typeof cause === "string" ? cause : "Could not fetch models. Retry or return to the platform."); }
+    finally { setBusy(null); }
+  }
+  async function cancelPlatformImport() {
+    if (disabled) return;
+    const id = pendingImport?.requestId ?? handoffSetup?.requestId;
+    if (!id) return;
+    try {
+      await cancelHandoff(id);
+      if (!pendingImport) { setHandoffSetup(null); setDiscovery(null); setSelection(EMPTY_SELECTION); setStep(0); setFurthest(0); }
+      setPendingImport(null); if (!pendingImport) setGatewayReview(false); setHandoffError("");
+    } catch { setHandoffError("Could not cancel the platform import. Reopen Connect."); }
+  }
+  function leavePlatformImport() {
+    if (handoffSetup) void cancelHandoff(handoffSetup.requestId).catch(() => setError("Could not clear the platform import. Reopen Connect."));
+    setHandoffSetup(null); setGatewayReview(false); setHandoffError("");
+  }
 
   async function refresh() {
     if (nativeAvailable) setStatus(await readStatus());
@@ -212,6 +287,7 @@ export default function App() {
     return persisted;
   }
   function changePreferences(next: StationPreferences): boolean {
+    leavePlatformImport();
     clearDiscovery();
     setApiKey("");
     setVisible(false);
@@ -261,6 +337,11 @@ export default function App() {
   }
   function changeClient(next: Client) {
     if (next === client) return;
+    if (handoffSetup) {
+      if (clientFamily(next) !== clientFamily(handoffSetup.suggestedClient)) { setError("Choose a client compatible with this imported API key."); return; }
+      setClient(next); setDiscovery(null); setSelection(EMPTY_SELECTION);
+      void fetchPlatformModels(next); return;
+    }
     setClient(next);
     clearDiscovery();
     setApiKey("");
@@ -274,6 +355,7 @@ export default function App() {
   }
   async function fetchModels(event?: FormEvent) {
     event?.preventDefault();
+    if (handoffSetup) { await fetchPlatformModels(); return; }
     if (disabled || !apiKey.trim()) return;
     clearDiscovery();
     if (!nativeAvailable) {
@@ -306,6 +388,7 @@ export default function App() {
         defaultModel: selection.defaultId,
       });
       setResult(imported);
+      setHandoffSetup(null); setHandoffError("");
       setApiKey("");
       setVisible(false);
       setDiscovery(null);
@@ -321,6 +404,7 @@ export default function App() {
     }
   }
   async function restoredClient(next: Client) {
+    setHandoffSetup(null); setHandoffError("");
     clearDiscovery();
     setClient(next === "codex" ? "codex-desktop" : next);
     setApiKey("");
@@ -368,6 +452,7 @@ export default function App() {
     }
   }
   function startAgain() {
+    leavePlatformImport();
     clearDiscovery();
     setApiKey("");
     setVisible(false);
@@ -410,7 +495,22 @@ export default function App() {
           </button>
         </div>
       </header>
+      {(pendingImport || gatewayReview) && (
+        <HandoffPanel pending={pendingImport} setup={gatewayReview ? handoffSetup : null}
+          hasWork={hasSetupWork} busy={disabled} error={handoffError}
+          onAccept={() => { if (gatewayReview) void fetchPlatformModels(); else if (pendingImport) void receivePlatformImport(pendingImport); }}
+          onCancel={() => { void cancelPlatformImport(); }} />
+      )}
       <div className="workspace">
+        {handoffSetup && !gatewayReview && <div className="preview-label handoff-banner" role="status">
+          <span>Platform import · {handoffSetup.providerName} · {handoffSetup.baseUrl}</span>
+          <div><button className="text-button" disabled={disabled} onClick={() => { void fetchPlatformModels(); }}>Refresh models</button>
+          <select aria-label="Client for platform import" value={client} disabled={disabled} onChange={event => changeClient(event.target.value as Client)}>
+            {clients.filter(item => clientFamily(item.id) === clientFamily(handoffSetup.suggestedClient)).map(item => <option value={item.id} key={item.id}>{item.name}</option>)}
+          </select>
+          <button className="text-button" disabled={disabled} onClick={() => { void cancelPlatformImport(); }}>Cancel import</button></div>
+        </div>}
+        {handoffError && !pendingImport && !gatewayReview && <p role="alert" className="notice notice-error">{handoffError}</p>}
         <div className="page-intro">
           <div>
             <h1>Connect your AI tools</h1>
