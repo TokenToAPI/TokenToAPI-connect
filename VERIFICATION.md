@@ -1,24 +1,36 @@
-# v0.1.3 release candidate verification
+# v0.1.3 verification
 
-Published on 2026-10-12 as the [macOS pilot prerelease](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.3). Platform deployment is pending: GitHub CI was unable to start because of account billing/spending limits.
+Release validation completed on 2026-10-12.
 
-- 67 Rust core tests pass, including strict handoff parsing, replay-sensitive redemption fixtures, error redaction, native credential retention and cancellation.
-- 12 frontend state tests and 3 App/RestorePanel lifecycle tests pass. TypeScript, frontend build, desktop Rust compilation and Clippy pass.
-- Home-page cards now use a consistent 10px gap; verified in Microsoft Edge and the native window.
-- A separately identified debug app uses a temporary home and fake fixture key for browser import/restore checks. Microsoft Edge app-opening, gateway review, model fetching, cold/running-app receipt, import, cancellation and restore are verified in that isolated environment. Three real configuration file hashes stayed unchanged.
-- Regression checks cover mixed-group client choice, Claude Code-only restrictions, queued imports during restore, normalized unsupported-group errors, and configured-to-empty gateway changes.
-- The macOS arm64 candidate is built locally. Signature, version, protocol registration and archive integrity are checked before handover. It remains ad-hoc signed and not Developer ID notarized.
-- Windows runtime and portable protocol registration have not been executed on Windows for this candidate. Its package remains a release-preparation step; do not imply that the macOS test validates Windows.
-- Platform frontend tests pass (2,687); full backend unit and Docker-backed PostgreSQL/Redis integration suites pass after stale password fixtures were corrected without changing production policy. The previous four account-test failures and five more found by broader coverage are resolved.
+## macOS
 
-Published ZIP SHA-256: `f4a54f8879cfde3a53cc46fc00f60e730c5d3c966af981b8922384675e85797d`. Rebuilt from committed source `005b53a4f2c8decc79d4720c357109439d5dc0a7`, merged unchanged in `b48d8cd69aa7dcda31e7d270a56bbb51e8b94b3e`. The final ZIP passed CRC, extracted signature, and version checks.
+- Kendrick confirmed that both he and YC tested the deployed platform import successfully on their Macs. Individual OS/client versions were not supplied; see [the acceptance record](docs/testing/macos-acceptance.md).
+- 67 Rust core tests, 12 frontend state tests and 3 lifecycle tests passed, along with TypeScript, build, formatting and Clippy.
+- Isolated native Microsoft Edge checks covered cold/running-app handoff, gateway review, model fetching, fake-key import, cancellation and restore. Real client configuration hashes remained unchanged.
+- Packaged arm64 executable, macOS 12 minimum, protocol registration, signature and ZIP integrity checks passed. The app remains ad-hoc signed and not notarized.
+- The published Mac ZIP is unchanged from the accepted candidate. App source: `005b53a4f2c8decc79d4720c357109439d5dc0a7`, merged in `b48d8cd69aa7dcda31e7d270a56bbb51e8b94b3e`.
 
-The [GitHub release preparation notes](docs/releases/v0.1.3-macos.md) and [Kendrick/YC acceptance checklist](docs/testing/macos-acceptance.md) are ready. Both live Mac results remain Pending; Windows follows those results.
+## Windows
 
-For the isolated handoff fixture, run scripts/mock-gateway.py and open
-http://127.0.0.1:18473/fixture/launch. Loopback HTTP handoffs work only in an
-isolated debug build; release builds require HTTPS. Never use real keys for
-these tests or upload restore records.
+- [Native Windows validation run](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/38276450134) passed on Windows Server 2022 x64, built from `76cd66a63234d138104890490478abadd4a5a410`.
+- 12 frontend state tests, 3 lifecycle tests, TypeScript, 68 Rust tests (including Windows-specific paths), formatting, desktop Clippy and the Windows release build passed.
+- The actual portable ZIP was extracted into a path with spaces and launched with WebView2. The smoke check verified quoted per-user protocol registration, cold and running-app handoff delivery, single-instance behavior, issuer review and cancellation.
+- Rust fixture tests exercise configuration writes and restoration in temporary directories. The packaged-app smoke test does not change client configurations or perform real paid model requests. Real Claude/Codex application sessions on Windows 10/11 remain outside this automated check.
+- PE32+ x64 GUI subsystem, v0.1.3 resources, non-elevated execution and ZIP integrity checks passed. No external VC++ or WebView2Loader DLL is required. WebView2 must be installed. The EXE is unsigned.
+- The native Windows build uses the same app source as the accepted Mac build; intervening changes add packaging instructions, validation scripts and documentation.
+
+## Published artifacts
+
+Use the release's `SHA256SUMS.txt` to check both downloads:
+
+```text
+1a265818c5ce840be687f727146a1076004246643a8c3ee347851e931666ed76  TokenToAPI-Connect-0.1.3-Windows-x64-portable.zip
+f4a54f8879cfde3a53cc46fc00f60e730c5d3c966af981b8922384675e85797d  TokenToAPI-Connect-0.1.3-macOS-arm64.zip
+```
+
+The platform provides both downloads through Import to Connect. Its frontend tests, type checking, lint, production build, custom overlay check and integration audit passed. GitHub platform CI could not start because of account billing limits; this is separate from the successful native Windows workflow.
+
+Cleanup of temporary local build/test resources was explicitly authorized after publication and deployment. Preserve these release assets, credentials, installed apps and real client settings.
 
 ## Previous v0.1.2 verification record
 

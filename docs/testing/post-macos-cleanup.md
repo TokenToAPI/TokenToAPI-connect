@@ -1,13 +1,6 @@
 # Cleanup reminder after Kendrick and YC finish testing
 
-Status: **waiting for both Mac acceptance results**. Keep the accepted release
-and anything needed to diagnose a failed test until both people are finished.
-When Kendrick reports that both Macs are done, remind him to say:
-
-> Clean up the Mac testing artifacts and Docker test resources now.
-
-Do the cleanup only after that follow-up. Re-inventory paths and Docker use
-first, preserve unrelated projects, and report how much space was recovered.
+Status: **cleanup authorized on 2026-10-12**. Kendrick confirmed both Mac acceptance results and explicitly requested cleanup after Windows publication and platform deployment. Preserve the accepted release and real configurations. Record actual reclaimed disk space in the completion report.
 
 ## Inventory recorded before publication (2026-10-12)
 

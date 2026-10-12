@@ -4,18 +4,16 @@
 
 A simple local API configurator. Choose a gateway, pick Claude or Codex, enter your API Key, select the models you need, and import.
 
-**v0.1.3 · macOS pilot prerelease** · [Download the Mac pilot](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.3) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
+**v0.1.3** · [Downloads](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.3) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
 
-## Current published downloads (v0.1.2)
+## Downloads
 
 | Platform | Download | How to open |
 | --- | --- | --- |
-| macOS 12+ · Apple Silicon (arm64) | [macOS Apple Silicon ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.2/TokenToAPI-Connect-0.1.2-macOS-arm64.zip) | Extract, then open `TokenToAPI Connect.app`; you can also move it to Applications |
-| Windows 10/11 · x64 | [Windows x64 portable ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.2/TokenToAPI-Connect-0.1.2-Windows-x64-portable.zip) | Extract the entire ZIP, then open `TokenToAPI Connect.exe` |
+| macOS 12+ · Apple Silicon (arm64) | [macOS Apple Silicon ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.3/TokenToAPI-Connect-0.1.3-macOS-arm64.zip) | Extract, then open `TokenToAPI Connect.app`; you can also move it to Applications |
+| Windows 10/11 · x64 | [Windows x64 portable ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.3/TokenToAPI-Connect-0.1.3-Windows-x64-portable.zip) | Extract the entire ZIP into a permanent folder, then open `TokenToAPI Connect.exe` once |
 
-Downloads from the official website and this page both come directly from [GitHub Releases](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.2). The [SHA-256 checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.2/SHA256SUMS.txt) are also under the same release.
-
-The [macOS v0.1.3 pilot ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.3/TokenToAPI-Connect-0.1.3-macOS-arm64.zip) and its [checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.3/SHA256SUMS.txt) are published separately from the stable v0.1.2 downloads above. The platform update is merged; deployment is pending; the new platform handoff is not live yet. See [verification notes](VERIFICATION.md), [draft release notes](docs/releases/v0.1.3-macos.md), and [the two-Mac acceptance checklist](docs/testing/macos-acceptance.md). Windows v0.1.3 validation follows Mac acceptance.
+Downloads come directly from [GitHub Releases](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.3). Verify them with the release's [SHA-256 checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.3/SHA256SUMS.txt). See [verification notes](VERIFICATION.md) for test coverage.
 
 No Node.js or Rust installation is required at runtime. The macOS package is for Apple Silicon Macs and uses an ad-hoc signature; it has not yet completed Apple Developer ID signing or notarization, so macOS may require confirmation before opening it. Windows uses the system WebView2 Runtime; if it is missing, install it from the [Microsoft website](https://developer.microsoft.com/microsoft-edge/webview2/) as prompted by the app. Checksums are in the release's `SHA256SUMS.txt`. The Windows portable package does not require installation or the VC++ Redistributable, but it is not yet publisher-signed, so Windows may show an unknown-publisher or SmartScreen warning.
 
@@ -27,7 +25,7 @@ Browsers or the OS may show interception warnings such as "not a commonly downlo
 
 Connect v0.1.3 adds the platform's **Import to Connect** handoff. This requires
 both the updated platform and Connect v0.1.3; v0.1.2 cannot handle these links.
-The macOS v0.1.3 prerelease is available above; wait for the matching platform deployment before testing this flow.
+The matching platform update is deployed. On Windows, opening the extracted app once registers the import link for your user account. If you move its folder, open the app again before importing.
 
 1. Open API Keys on the platform and choose **Import to Connect** for your key.
 2. Click **Open TokenToAPI Connect** and allow the browser to open the app.
@@ -172,7 +170,7 @@ pnpm tauri build --bundles deb
 pnpm tauri build --bundles rpm
 ```
 
-Linux GUI packages should be built on Linux rather than cross-compiled from macOS or Windows. The official `v0.1.2` release currently provides macOS arm64 and Windows x64 packages; Linux users should build from source until a Linux release artifact is published.
+Linux GUI packages should be built on Linux rather than cross-compiled from macOS or Windows. The official `v0.1.3` release provides macOS arm64 and Windows x64 packages; Linux users should build from source until a Linux release artifact is published.
 
 ### Packaging scripts
 
@@ -191,7 +189,7 @@ Artifacts go to `release/`. The Windows script skips the installer and checks th
 
 `.cargo/config.toml` controls fully static CRT linking; `tauri.windows.conf.json` disables Tauri's own mixed-CRT override to avoid conflicts.
 
-Releases are produced entirely locally and consume no cloud CI quota. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
+macOS releases are built locally. Windows releases are built and validated on a native Windows GitHub Actions runner. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
 
 ## Isolated testing
 

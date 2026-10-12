@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.3 — release candidate, 2026-10-12
+## v0.1.3 - 2026-10-12
 
 - Added browser-to-app platform imports through the tokentoapi-connect protocol.
 - Redeems short-lived, single-use handoff codes in native memory; keys stay out of app-opening URLs and browser storage.
@@ -9,7 +9,8 @@
 - Keeps the imported gateway name in the success summary and preserves existing backup/restore behavior.
 - Enforces authoritative allowed clients for mixed and Claude Code-only groups; queues imports while restore review is open.
 - Adds consistent spacing between the home-page gateway, restore and add-gateway cards.
-- Prepares macOS release notes and separate acceptance checks for Kendrick and YC; Windows follows their Mac validation.
+- Adds per-user Windows protocol registration for the portable app; open it once after extracting or moving its folder.
+- Validates Windows packaging and native handoff behavior on a Windows runner after reported Mac acceptance.
 
 
 ## v0.1.2 - 2026-10-12
