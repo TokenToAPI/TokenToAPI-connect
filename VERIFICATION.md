@@ -1,6 +1,6 @@
 # Verification Notes
 
-Verification date: 2026-10-11 (v0.1.1). The public v0.1.0 release was previously verified on 2026-10-08.
+Verification date: 2026-10-12 (v0.1.2). The public v0.1.1 release was previously verified on 2026-10-11.
 
 > **TokenToAPI Connect note (2026-10-07)**: this project's configuration engine, client adaptation, and test logic
 > originate from CC Switch's open-source configuration engine (MIT licensed, see [UPSTREAM.md](UPSTREAM.md)), and it has fully
@@ -10,7 +10,7 @@ Verification date: 2026-10-11 (v0.1.1). The public v0.1.0 release was previously
 
 ## Automated tests
 
-- macOS / Apple Silicon: 54 Rust configuration tests and 10 frontend state tests pass; the TypeScript check and the frontend production build pass.
+- macOS / Apple Silicon: 61 Rust configuration tests and 10 frontend state tests pass; the TypeScript check, frontend production build, Rust formatting check, and Clippy pass.
 - Configuration tests cover preserving the original restore point after multiple imports, exact restoration of an existing authentication file, reverting a newly created file, comment preservation, rejecting a stale preview, confirming later edits, interrupted-operation recovery, corrupted configuration, file locks, and paths containing non-ASCII characters and spaces.
 - Model discovery tests use a loopback address to mock the gateway with fake keys, checking authentication, redirect rejection, model selection, and binding of the fetch results, without calling any real inference endpoint.
 - The Windows-specific configuration test code includes `.cmd` launcher and AppData path checks and has been cross-compiled. The automated tests above were run on macOS.
@@ -18,8 +18,8 @@ Verification date: 2026-10-11 (v0.1.1). The public v0.1.0 release was previously
 ## Artifact checks
 
 - The macOS UI passed isolated import, restore, light/dark theme, and small-window checks. The public release unifies the version identity and the packaging method.
-- Windows x64 EXE checks cover the PE architecture, GUI subsystem, 0.1.1 version resources, app icon, `asInvoker` permissions, and system DLL imports. No external VC++ or WebView2Loader DLL is required; the actual UI still needs the system WebView2 Runtime.
-- The Mac package is checked for arm64, the 0.1.1 app version, macOS 12 minimum system version, and the ad-hoc signature; the ZIPs for both platforms are checked for CRC, archiver, and build artifact consistency, and SHA-256 is provided.
+- Windows x64 EXE checks cover the PE architecture, GUI subsystem, 0.1.2 version resources, app icon, `asInvoker` permissions, and system DLL imports. No external VC++ or WebView2Loader DLL is required; the actual UI still needs the system WebView2 Runtime.
+- The Mac package is checked for arm64, the 0.1.2 app version, macOS 12 minimum system version, and the ad-hoc signature; the ZIPs for both platforms are checked for CRC, archiver, and build artifact consistency, and SHA-256 is provided.
 
 ## Scope of verification
 

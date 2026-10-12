@@ -1,2 +1,2 @@
-49b2b21e392d566e368573516d85d17d863dfc8061c455dd02936a8ee6f39a26  TokenToAPI-Connect-0.1.1-Windows-x64-portable.zip
-4ff135451eb339ab473a6260c961cae7448a6a988f08a28634c11b3e668d2293  TokenToAPI-Connect-0.1.1-macOS-arm64.zip
+3c1847f6506722fba787cdb5490e6bf185f16bc99237b868a78e88dadb673a87  TokenToAPI-Connect-0.1.2-Windows-x64-portable.zip
+9ed4e3a7d1634f31be0a500bff1674751d06b5286629449ee57038f89d73aec7  TokenToAPI-Connect-0.1.2-macOS-arm64.zip

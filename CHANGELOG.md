@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.2 - 2026-10-12
+
+- Made custom gateway settings continuously editable: adding a gateway selects it and keeps its settings open, while later edits remain in place with an explicit saved-state confirmation.
+- Preserved the selected gateway across app restarts and prevented edits or deletions of other saved gateways from interrupting the active connection setup.
+- Reject duplicate gateway names during preference recovery as well as interactive editing.
+
 ## v0.1.1 - 2026-10-11
 
 - Fixed Codex reasoning-level catalogs for OpenAI-style and gateway-native model discovery responses, including gateway-provided capability metadata.

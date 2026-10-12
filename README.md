@@ -4,16 +4,16 @@
 
 A simple local API configurator. Choose a gateway, pick Claude or Codex, enter your API Key, select the models you need, and import.
 
-**v0.1.1 · Latest release** · [Download](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.1) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
+**v0.1.2 · Latest release** · [Download](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.2) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
 
 ## Download & usage
 
 | Platform | Download | How to open |
 | --- | --- | --- |
-| macOS 12+ · Apple Silicon (arm64) | [macOS Apple Silicon ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.1/TokenToAPI-Connect-0.1.1-macOS-arm64.zip) | Extract, then open `TokenToAPI Connect.app`; you can also move it to Applications |
-| Windows 10/11 · x64 | [Windows x64 portable ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.1/TokenToAPI-Connect-0.1.1-Windows-x64-portable.zip) | Extract the entire ZIP, then open `TokenToAPI Connect.exe` |
+| macOS 12+ · Apple Silicon (arm64) | [macOS Apple Silicon ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.2/TokenToAPI-Connect-0.1.2-macOS-arm64.zip) | Extract, then open `TokenToAPI Connect.app`; you can also move it to Applications |
+| Windows 10/11 · x64 | [Windows x64 portable ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.2/TokenToAPI-Connect-0.1.2-Windows-x64-portable.zip) | Extract the entire ZIP, then open `TokenToAPI Connect.exe` |
 
-Downloads from the official website and this page both come directly from [GitHub Releases](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.1). The [SHA-256 checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.1/SHA256SUMS.txt) are also under the same release.
+Downloads from the official website and this page both come directly from [GitHub Releases](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.2). The [SHA-256 checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.2/SHA256SUMS.txt) are also under the same release.
 
 **Automated tests and artifact checks have all passed**; see [Verification notes](VERIFICATION.md) for the detailed scope.
 
@@ -153,7 +153,7 @@ pnpm tauri build --bundles deb
 pnpm tauri build --bundles rpm
 ```
 
-Linux GUI packages should be built on Linux rather than cross-compiled from macOS or Windows. The official `v0.1.1` release currently provides macOS arm64 and Windows x64 packages; Linux users should build from source until a Linux release artifact is published.
+Linux GUI packages should be built on Linux rather than cross-compiled from macOS or Windows. The official `v0.1.2` release currently provides macOS arm64 and Windows x64 packages; Linux users should build from source until a Linux release artifact is published.
 
 ### Packaging scripts
 
