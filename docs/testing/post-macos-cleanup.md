@@ -2,6 +2,12 @@
 
 Status: **cleanup completed on 2026-10-12**. Kendrick confirmed both Mac acceptance results and explicitly requested cleanup after Windows publication and platform deployment. Preserve the accepted release and real configurations. Removed task files totaling about 15.9 GiB (toolchains, both merged test worktrees and temporary fixtures/downloads/logs/binaries), plus the three Docker test images totaling about 542.6 MB. Docker now reports zero images, containers, volumes and build cache. Filesystem/Docker VM reclamation may differ from these logical sizes. The primary checkouts, published Mac/Windows ZIPs, installed applications, credentials and real client configurations were preserved.
 
+## Follow-up audit — 2026-10-13
+
+The first pass left generated files in the primary platform checkout and a task-created shared package cache. The follow-up removes approximately another 1.4 GiB: frontend `node_modules` (725 MiB), embedded frontend build output (8.3 MiB), pnpm v3 store created during this task (662 MiB), pnpm metadata created during this task (21 MiB), and the isolated `com.tokentoapi.connect.test` WebKit/cache data. Source remains clean.
+
+Docker was started for verification and again reported zero images, containers, volumes and build cache; it was then stopped. Its small VM disk is Docker application infrastructure, not a retained test image. Pre-existing pnpm v10/v11 caches, Codex/Hugging Face caches, normal Connect app data and release downloads are preserved because they are shared or unrelated to this task.
+
 ## Inventory recorded before publication (2026-10-12)
 
 Paths below are relative to Kendrick's `Startup-Bois` workspace unless stated
