@@ -1,4 +1,5 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 export type Client =
   | "claude"
   | "codex"
@@ -23,6 +24,7 @@ export interface Status {
   clients: ClientStatus[];
 }
 export interface ImportResult {
+  providerName?: string | null;
   client: Client;
   model: string;
   selectedModels: string[];
@@ -90,4 +92,33 @@ export function restoreConfig(
   overwriteModified: boolean,
 ): Promise<RestoreResult> {
   return invoke("restore_config", { client, reviewId, overwriteModified });
+}
+
+export interface PendingHandoff {
+  requestId: string;
+  issuer: string;
+  knownIssuer: boolean;
+}
+export interface HandoffSetup {
+  requestId: string;
+  providerName: string;
+  baseUrl: string;
+  suggestedClient: Client;
+  allowedClients: Client[];
+  gatewayNeedsReview: boolean;
+}
+export function pendingHandoff(): Promise<PendingHandoff | null> {
+  return invoke("pending_handoff");
+}
+export function acceptHandoff(requestId: string): Promise<HandoffSetup> {
+  return invoke("accept_handoff", { requestId });
+}
+export function discoverHandoffModels(requestId: string, client: Client): Promise<DiscoveryResult> {
+  return invoke("discover_handoff_models", { requestId, client });
+}
+export function cancelHandoff(requestId: string): Promise<void> {
+  return invoke("cancel_handoff", { requestId });
+}
+export async function watchHandoffs(callback: () => void): Promise<() => void> {
+  return listen("connect-handoff", callback);
 }

@@ -19,7 +19,7 @@ This project extracts CC Switch's configuration-modification engine, retains the
 
 The newly written code handles the single-page UI, model catalog fetching, client adaptation, backup transactions, and restore. Storage uses the same same-directory temporary-file atomic replacement strategy as upstream, implemented with tempfile, and does not copy upstream's SQLite, proxy, or account systems.
 
-Upstream's proxy forwarding, automatic failover, statistics, MCP/Skills management, subscription login, cloud sync, tray, auto-update, and deep-link handlers are not included. No upstream update URL or app identifier is inherited, and the CC Switch database is not read.
+Upstream's proxy forwarding, automatic failover, statistics, MCP/Skills management, subscription login, cloud sync, tray, auto-update, and CC Switch deep-link handlers are not included. TokenToAPI Connect v0.1.3 adds its own tokentoapi-connect handoff protocol; it does not accept ccswitch links. No upstream update URL or app identifier is inherited, and the CC Switch database is not read.
 
 
 Branding: the app UI and packaging icons use TokenToAPI's official brand (the T2A Emerald/Sky gradient mark); the brand assets come from the [TokenToAPI](https://tokentoapi.com) brand kit.

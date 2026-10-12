@@ -1,6 +1,7 @@
 pub mod adapter;
 pub mod compatibility;
 pub mod desktop_config;
+pub mod handoff;
 pub mod models;
 #[allow(dead_code)]
 mod patch;
@@ -15,11 +16,14 @@ mod desktop {
     use super::*;
     use serde::Serialize;
     use std::sync::Mutex;
+    use tauri::{Emitter, Manager};
+    use tauri_plugin_deep_link::DeepLinkExt;
 
     struct AppState {
         paths: storage::Paths,
         busy: Mutex<bool>,
         discovery: Mutex<Option<models::DiscoverySession>>,
+        handoff: Mutex<handoff::HandoffState>,
     }
     struct BusyGuard<'a>(&'a Mutex<bool>);
     impl<'a> BusyGuard<'a> {
@@ -111,7 +115,17 @@ mod desktop {
             .as_ref()
             .ok_or("Fetch the available models first.")?
             .prepare(&input)?;
-        let result = adapter::apply(&state.paths, validated)?;
+        let mut result = adapter::apply(&state.paths, validated)?;
+        result.provider_name = state
+            .handoff
+            .lock()
+            .map_err(|_| "Could not read the imported gateway.")?
+            .completion_provider(&result.base_url);
+        state
+            .handoff
+            .lock()
+            .map_err(|_| "Could not clear the platform import.")?
+            .clear_accepted();
         *state
             .discovery
             .lock()
@@ -127,6 +141,11 @@ mod desktop {
     ) -> Result<restore::RestoreResult, String> {
         let _busy = BusyGuard::begin(&state.busy)?;
         let result = restore::apply(&state.paths, client, &review_id, overwrite_modified)?;
+        state
+            .handoff
+            .lock()
+            .map_err(|_| "Could not clear the platform import.")?
+            .clear_accepted();
         *state
             .discovery
             .lock()
@@ -137,6 +156,90 @@ mod desktop {
     fn restore_points(state: tauri::State<'_, AppState>) -> Vec<restore::RestorePoint> {
         restore::list(&state.paths)
     }
+    #[tauri::command]
+    fn pending_handoff(
+        state: tauri::State<'_, AppState>,
+    ) -> Result<Option<handoff::PendingHandoff>, String> {
+        Ok(state
+            .handoff
+            .lock()
+            .map_err(|_| "Could not read the platform import.")?
+            .pending())
+    }
+    #[tauri::command]
+    async fn accept_handoff(
+        state: tauri::State<'_, AppState>,
+        request_id: String,
+    ) -> Result<handoff::SetupView, String> {
+        let _busy = BusyGuard::begin(&state.busy)?;
+        let link = {
+            state
+                .handoff
+                .lock()
+                .map_err(|_| "Could not read the platform import.")?
+                .link(&request_id)?
+        };
+        let setup = handoff::redeem(&link, state.paths.sandbox && cfg!(debug_assertions)).await?;
+        let view = state
+            .handoff
+            .lock()
+            .map_err(|_| "Could not prepare the platform import.")?
+            .accept(&request_id, setup)?;
+        *state
+            .discovery
+            .lock()
+            .map_err(|_| "Could not clear the previous model list.")? = None;
+        Ok(view)
+    }
+    #[tauri::command]
+    async fn discover_handoff_models(
+        state: tauri::State<'_, AppState>,
+        request_id: String,
+        client: models::Client,
+    ) -> Result<models::DiscoveryResponse, String> {
+        let input = {
+            state
+                .handoff
+                .lock()
+                .map_err(|_| "Could not read the platform import.")?
+                .discovery_input(&request_id, client)?
+        };
+        discover_models(state, input).await
+    }
+    #[tauri::command]
+    fn cancel_handoff(state: tauri::State<'_, AppState>, request_id: String) -> Result<(), String> {
+        let _busy = BusyGuard::begin(&state.busy)?;
+        let cleared = state
+            .handoff
+            .lock()
+            .map_err(|_| "Could not cancel the platform import.")?
+            .cancel(&request_id);
+        if cleared {
+            *state
+                .discovery
+                .lock()
+                .map_err(|_| "Could not clear the previous model list.")? = None;
+        }
+        Ok(())
+    }
+    fn receive_handoffs(app: &tauri::AppHandle, urls: &[reqwest::Url]) {
+        let state = app.state::<AppState>();
+        let mut changed = false;
+        if let Ok(mut pending) = state.handoff.lock() {
+            for url in urls {
+                changed |=
+                    pending.receive(url.as_str(), state.paths.sandbox && cfg!(debug_assertions));
+            }
+        }
+        if changed {
+            let _ = app.emit("connect-handoff", ());
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }
+    }
+
     fn startup_error(message: &str) -> ! {
         #[cfg(windows)]
         {
@@ -164,12 +267,35 @@ mod desktop {
         }
         let paths = storage::Paths::discover().unwrap_or_else(|error| startup_error(&error));
         if let Err(error) = tauri::Builder::default()
+            .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }))
+            .plugin(tauri_plugin_deep_link::init())
             .manage(AppState {
                 paths,
                 busy: Mutex::new(false),
                 discovery: Mutex::new(None),
+                handoff: Mutex::new(handoff::HandoffState::default()),
+            })
+            .setup(|app| {
+                #[cfg(any(windows, target_os = "linux"))]
+                app.deep_link().register_all()?;
+                let handle = app.handle().clone();
+                app.deep_link()
+                    .on_open_url(move |event| receive_handoffs(&handle, &event.urls()));
+                if let Some(urls) = app.deep_link().get_current()? {
+                    receive_handoffs(app.handle(), &urls);
+                }
+                Ok(())
             })
             .invoke_handler(tauri::generate_handler![
+                pending_handoff,
+                accept_handoff,
+                discover_handoff_models,
+                cancel_handoff,
                 app_status,
                 discover_models,
                 import_config,

@@ -15,6 +15,7 @@ use toml_edit::{value, Item, Table};
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ImportResult {
+    pub provider_name: Option<String>,
     pub client: Client,
     pub model: String,
     pub selected_models: Vec<String>,
@@ -187,6 +188,7 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
     }
     let changed = storage::commit(paths, input.client, changes)?;
     Ok(ImportResult {
+        provider_name: None,
         client: input.client,
         model: input.model,
         selected_models: input.selected_models,

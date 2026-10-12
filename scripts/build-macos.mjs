@@ -22,6 +22,8 @@ const source = path.join(root, 'src-tauri/target', target, 'release/bundle/macos
 const actual = run('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleShortVersionString', path.join(source, 'Contents/Info.plist')],
   { encoding: 'utf8', stdio: 'pipe' }).trim();
 if (actual !== version) throw new Error('App version does not match package.json');
+const protocols = run('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleURLTypes', path.join(source, 'Contents/Info.plist')], { encoding: 'utf8', stdio: 'pipe' });
+if (!protocols.includes('tokentoapi-connect')) throw new Error('Connect import protocol is missing');
 const minimumSystemVersion = run('/usr/libexec/PlistBuddy', ['-c', 'Print :LSMinimumSystemVersion', path.join(source, 'Contents/Info.plist')],
   { encoding: 'utf8', stdio: 'pipe' }).trim();
 if (minimumSystemVersion !== '12.0') throw new Error('Expected a macOS 12.0 minimum system version');
@@ -45,7 +47,8 @@ try {
   fs.writeFileSync(path.join(folder, 'README.txt'), `TokenToAPI Connect ${version} · macOS 12+ · Apple Silicon
 
 After extracting, open TokenToAPI Connect.app; you can also drag it into the Applications folder.
-Choose a gateway → choose a client → enter your API Key → fetch and select models → import.
+Use Import to Connect on the updated platform, then review models and click Import.
+Manual setup: choose a gateway → choose a client → enter your API Key → fetch and select models → import.
 After importing, fully quit the target client, then reopen it and start a new session.
 To revert, choose "Use original config" from the gateway list.
 
@@ -61,6 +64,7 @@ Latest verification notes: https://github.com/TokenToAPI/TokenToAPI-connect/blob
   fs.copyFileSync(archive, path.join(release, name));
   const hashes = fs.readdirSync(release).filter(name => name.startsWith(`TokenToAPI-Connect-${version}-`) && name.endsWith('.zip')).sort()
     .map(name => `${createHash('sha256').update(fs.readFileSync(path.join(release, name))).digest('hex')}  ${name}`);
+  fs.writeFileSync(path.join(release, `SHA256SUMS-${version}.txt`), hashes.join('\n') + '\n');
   fs.writeFileSync(path.join(release, 'SHA256SUMS.txt'), hashes.join('\n') + '\n');
   console.log(`Packaged: ${path.join(release, name)}`);
 } finally {
