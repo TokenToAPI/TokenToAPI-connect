@@ -1,8 +1,6 @@
 name: Windows release validation
 on:
   workflow_dispatch:
-  push:
-    branches: [release/windows-0.1.3]
 permissions:
   contents: read
 jobs:

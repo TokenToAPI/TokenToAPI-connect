@@ -189,7 +189,7 @@ Artifacts go to `release/`. The Windows script skips the installer and checks th
 
 `.cargo/config.toml` controls fully static CRT linking; `tauri.windows.conf.json` disables Tauri's own mixed-CRT override to avoid conflicts.
 
-macOS releases are built locally. Windows releases are built and validated on a native Windows GitHub Actions runner. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
+Run release checks locally by default. Build and validate Windows packages on a native Windows machine; cross-compilation on a Mac does not verify Windows runtime behavior. The v0.1.3 Windows package was validated on a Windows runner before this policy changed. GitHub Actions is now manual-only. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
 
 ## Isolated testing
 
