@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, CircleAlert, Globe2, Trash2, X } from "lucide-react";
+import { ArrowRight, Check, CircleAlert, Globe2, Trash2, X } from "lucide-react";
 import { normalizeStationUrl, type Station } from "./stations";
 
 export default function StationEditor({
@@ -13,7 +13,7 @@ export default function StationEditor({
   station: Station | null;
   stations: Station[];
   selected: boolean;
-  onSave: (station: Station, selectAfterSave: boolean) => void;
+  onSave: (station: Station, selectAfterSave: boolean) => boolean;
   onDelete: (id: string) => void;
   onClose: () => void;
 }) {
@@ -21,6 +21,9 @@ export default function StationEditor({
   const [name, setName] = useState(station?.name ?? "");
   const [baseUrl, setBaseUrl] = useState(station?.baseUrl ?? "");
   const [error, setError] = useState("");
+  const [saveState, setSaveState] = useState<
+    "selected" | "saved" | "session-only" | null
+  >(null);
   useEffect(() => {
     const element = dialog.current!;
     element.showModal();
@@ -67,7 +70,8 @@ export default function StationEditor({
         name: trimmed,
         baseUrl: normalized,
       };
-      onSave(next, !station);
+      const persisted = onSave(next, !station);
+      setSaveState(persisted ? (station ? "saved" : "selected") : "session-only");
     } catch (error) {
       setError(
         error instanceof Error
@@ -98,6 +102,19 @@ export default function StationEditor({
       </div>
       <h2 id="station-dialog-title">{station ? "Edit gateway" : "Add gateway"}</h2>
       <p className="dialog-intro">Save the name and API address for easy selection next time.</p>
+      {saveState && (
+        <p
+          className={`station-save-note ${saveState === "session-only" ? "is-warning" : ""}`}
+          role="status"
+        >
+          {saveState !== "session-only" && <Check size={14} strokeWidth={2.5} />}
+          {saveState === "selected"
+            ? "Gateway saved and selected. You can keep changing its settings here."
+            : saveState === "saved"
+              ? "Changes saved."
+              : "Changes apply in this session, but couldn't be saved on this device."}
+        </p>
+      )}
       {station && selected && (
         <p className="station-selected-note" role="status">
           <span aria-hidden="true" />
@@ -117,6 +134,7 @@ export default function StationEditor({
               onChange={(e) => {
                 setName(e.target.value);
                 setError("");
+                setSaveState(null);
               }}
               placeholder="e.g. My gateway"
               maxLength={32}
@@ -131,6 +149,7 @@ export default function StationEditor({
               onChange={(e) => {
                 setBaseUrl(e.target.value);
                 setError("");
+                setSaveState(null);
               }}
               placeholder="https://api.example.com"
               maxLength={2048}

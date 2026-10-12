@@ -205,16 +205,18 @@ export default function App() {
     setResult(null);
     setRestored(false);
   }
-  function persistPreferences(next: StationPreferences, errorMessage: string) {
+  function persistPreferences(next: StationPreferences, errorMessage: string): boolean {
     setPreferences(next);
-    if (!saveStationPreferences(next)) setError(errorMessage);
+    const persisted = saveStationPreferences(next);
+    if (!persisted) setError(errorMessage);
+    return persisted;
   }
-  function changePreferences(next: StationPreferences) {
+  function changePreferences(next: StationPreferences): boolean {
     clearDiscovery();
     setApiKey("");
     setVisible(false);
     setFurthest(0);
-    persistPreferences(
+    return persistPreferences(
       next,
       "The gateway was selected for this session, but couldn't be saved on this device.",
     );
@@ -228,14 +230,17 @@ export default function App() {
         : [...preferences.custom, next],
     } as const;
     if (selectAfterSave || preferences.selected === next.id) {
-      changePreferences(nextPreferences);
+      const persisted = changePreferences(nextPreferences);
+      setEditing(next);
+      return persisted;
     } else {
-      persistPreferences(
+      const persisted = persistPreferences(
         nextPreferences,
         "Gateway settings were updated for this session, but couldn't be saved on this device.",
       );
+      setEditing(next);
+      return persisted;
     }
-    setEditing(next);
   }
   function deleteStation(id: string) {
     const wasSelected = preferences.selected === id;

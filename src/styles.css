@@ -1463,6 +1463,18 @@ strong {
   font-size: 11px;
   line-height: 1.5;
 }
+.station-save-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -8px 0 8px;
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.station-save-note.is-warning {
+  color: var(--danger);
+}
 .station-unselected-note {
   margin: -8px 0 3px;
   color: var(--muted);
