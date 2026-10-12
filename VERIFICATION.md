@@ -1,6 +1,6 @@
 # v0.1.3 release candidate verification
 
-Prepared on 2026-10-12. This is a local candidate, not a published release.
+Published on 2026-10-12 as the [macOS pilot prerelease](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.3). Platform deployment is pending: GitHub CI was unable to start because of account billing/spending limits.
 
 - 67 Rust core tests pass, including strict handoff parsing, replay-sensitive redemption fixtures, error redaction, native credential retention and cancellation.
 - 12 frontend state tests and 3 App/RestorePanel lifecycle tests pass. TypeScript, frontend build, desktop Rust compilation and Clippy pass.
@@ -11,7 +11,7 @@ Prepared on 2026-10-12. This is a local candidate, not a published release.
 - Windows runtime and portable protocol registration have not been executed on Windows for this candidate. Its package remains a release-preparation step; do not imply that the macOS test validates Windows.
 - Platform frontend tests pass (2,687); full backend unit and Docker-backed PostgreSQL/Redis integration suites pass after stale password fixtures were corrected without changing production policy. The previous four account-test failures and five more found by broader coverage are resolved.
 
-Candidate SHA-256: `118966045b8c903d555debe5ce2db35ce642f9ea1cb770faa515cf1e44076740`. This package was built from the local working tree, including uncommitted spacing edits; rebuild and regenerate the checksum from the final committed source before publication.
+Published ZIP SHA-256: `f4a54f8879cfde3a53cc46fc00f60e730c5d3c966af981b8922384675e85797d`. Rebuilt from committed source `005b53a4f2c8decc79d4720c357109439d5dc0a7`, merged unchanged in `b48d8cd69aa7dcda31e7d270a56bbb51e8b94b3e`. The final ZIP passed CRC, extracted signature, and version checks.
 
 The [GitHub release preparation notes](docs/releases/v0.1.3-macos.md) and [Kendrick/YC acceptance checklist](docs/testing/macos-acceptance.md) are ready. Both live Mac results remain Pending; Windows follows those results.
 
