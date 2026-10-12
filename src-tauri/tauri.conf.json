@@ -44,5 +44,14 @@
       "../licenses/jsonc-parser-MIT.txt",
       "../licenses/THIRD-PARTY-NOTICES.txt"
     ]
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "tokentoapi-connect"
+        ]
+      }
+    }
   }
 }
