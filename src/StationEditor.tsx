@@ -5,13 +5,15 @@ import { normalizeStationUrl, type Station } from "./stations";
 export default function StationEditor({
   station,
   stations,
+  selected,
   onSave,
   onDelete,
   onClose,
 }: {
   station: Station | null;
   stations: Station[];
-  onSave: (station: Station) => void;
+  selected: boolean;
+  onSave: (station: Station, selectAfterSave: boolean) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
 }) {
@@ -65,7 +67,7 @@ export default function StationEditor({
         name: trimmed,
         baseUrl: normalized,
       };
-      onSave(next);
+      onSave(next, !station);
     } catch (error) {
       setError(
         error instanceof Error
@@ -96,10 +98,15 @@ export default function StationEditor({
       </div>
       <h2 id="station-dialog-title">{station ? "Edit gateway" : "Add gateway"}</h2>
       <p className="dialog-intro">Save the name and API address for easy selection next time.</p>
-      {station && (
+      {station && selected && (
         <p className="station-selected-note" role="status">
           <span aria-hidden="true" />
           Selected for this connection. You can keep changing its settings here.
+        </p>
+      )}
+      {station && !selected && (
+        <p className="station-unselected-note">
+          Editing this saved gateway does not change the current connection.
         </p>
       )}
       <form onSubmit={submit} noValidate>

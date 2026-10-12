@@ -59,6 +59,7 @@ export function parseStationPreferences(
     if (data.version !== 1 || !Array.isArray(data.custom)) return fallback;
     const seenIds = new Set([DEFAULT_STATION.id]);
     const seenUrls = new Set([DEFAULT_STATION.baseUrl]);
+    const seenNames = new Set([DEFAULT_STATION.name.toLowerCase()]);
     for (const row of data.custom.slice(0, 30)) {
       if (!row || typeof row !== "object") continue;
       const { id, name, baseUrl } = row;
@@ -70,7 +71,8 @@ export function parseStationPreferences(
         !name.trim() ||
         name.trim().length > 32 ||
         /[\u0000-\u001f\u007f]/.test(name) ||
-        typeof baseUrl !== "string"
+        typeof baseUrl !== "string" ||
+        seenNames.has(name.trim().toLowerCase())
       )
         continue;
       try {
@@ -79,6 +81,7 @@ export function parseStationPreferences(
         fallback.custom.push({ id, name: name.trim(), baseUrl: normalized });
         seenIds.add(id);
         seenUrls.add(normalized);
+        seenNames.add(name.trim().toLowerCase());
       } catch {
         /* Ignore malformed entries without blocking the app. */
       }

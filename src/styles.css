@@ -1463,6 +1463,12 @@ strong {
   font-size: 11px;
   line-height: 1.5;
 }
+.station-unselected-note {
+  margin: -8px 0 3px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
 .station-selected-note > span {
   width: 7px;
   height: 7px;

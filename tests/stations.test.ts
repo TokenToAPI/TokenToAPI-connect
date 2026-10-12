@@ -72,7 +72,7 @@ test("invalid destinations cannot be saved, including credentials in URLs", () =
     "http://127.0.0.1:18473",
   );
 });
-test("duplicate destinations, duplicate IDs, and attempts to replace the default are ignored", () => {
+test("duplicate destinations, names, IDs, and attempts to replace the default are ignored", () => {
   const loaded = parseStationPreferences(
     JSON.stringify({
       version: 1,
@@ -90,6 +90,7 @@ test("duplicate destinations, duplicate IDs, and attempts to replace the default
         },
         { id: "custom-one", name: "One", baseUrl: "https://one.example.test" },
         { id: "custom-one", name: "Two", baseUrl: "https://two.example.test" },
+        { id: "custom-two", name: " one ", baseUrl: "https://two.example.test" },
       ],
     }),
   );

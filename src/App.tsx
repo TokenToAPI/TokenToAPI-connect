@@ -137,10 +137,9 @@ export default function App() {
   const [theme, setTheme] = useState(initialTheme);
   const [step, setStep] = useState(0);
   const [furthest, setFurthest] = useState(0);
-  const [preferences, setPreferences] = useState<StationPreferences>(() => ({
-    ...loadStationPreferences(),
-    selected: DEFAULT_STATION.id,
-  }));
+  const [preferences, setPreferences] = useState<StationPreferences>(
+    loadStationPreferences,
+  );
   const [editing, setEditing] = useState<Station | null | undefined>();
   const [client, setClient] = useState<Client>("codex-desktop");
   const [apiKey, setApiKey] = useState("");
@@ -206,24 +205,54 @@ export default function App() {
     setResult(null);
     setRestored(false);
   }
+  function persistPreferences(next: StationPreferences, errorMessage: string) {
+    setPreferences(next);
+    if (!saveStationPreferences(next)) setError(errorMessage);
+  }
   function changePreferences(next: StationPreferences) {
     clearDiscovery();
     setApiKey("");
     setVisible(false);
     setFurthest(0);
-    setPreferences(next);
-    if (!saveStationPreferences(next))
-      setError("The gateway was selected for this session, but couldn't be saved on this device.");
+    persistPreferences(
+      next,
+      "The gateway was selected for this session, but couldn't be saved on this device.",
+    );
   }
-  function saveStation(next: Station) {
-    changePreferences({
+  function saveStation(next: Station, selectAfterSave: boolean) {
+    const nextPreferences = {
       version: 1,
-      selected: next.id,
+      selected: selectAfterSave ? next.id : preferences.selected,
       custom: preferences.custom.some((item) => item.id === next.id)
         ? preferences.custom.map((item) => (item.id === next.id ? next : item))
         : [...preferences.custom, next],
-    });
+    } as const;
+    if (selectAfterSave || preferences.selected === next.id) {
+      changePreferences(nextPreferences);
+    } else {
+      persistPreferences(
+        nextPreferences,
+        "Gateway settings were updated for this session, but couldn't be saved on this device.",
+      );
+    }
     setEditing(next);
+  }
+  function deleteStation(id: string) {
+    const wasSelected = preferences.selected === id;
+    const next = {
+      version: 1,
+      selected: wasSelected ? DEFAULT_STATION.id : preferences.selected,
+      custom: preferences.custom.filter((item) => item.id !== id),
+    } as const;
+    if (wasSelected) {
+      changePreferences(next);
+    } else {
+      persistPreferences(
+        next,
+        "Gateway settings were removed for this session, but couldn't be saved on this device.",
+      );
+    }
+    setEditing(undefined);
   }
   function changeClient(next: Client) {
     if (next === client) return;
@@ -1081,15 +1110,9 @@ export default function App() {
         <StationEditor
           station={editing}
           stations={stations}
+          selected={editing ? preferences.selected === editing.id : false}
           onSave={saveStation}
-          onDelete={(id) => {
-            changePreferences({
-              version: 1,
-              selected: DEFAULT_STATION.id,
-              custom: preferences.custom.filter((item) => item.id !== id),
-            });
-            setEditing(undefined);
-          }}
+          onDelete={deleteStation}
           onClose={() => setEditing(undefined)}
         />
       )}
