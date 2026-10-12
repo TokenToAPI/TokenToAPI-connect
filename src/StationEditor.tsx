@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Check, CircleAlert, Globe2, Trash2, X } from "lucide-react";
+import { ArrowRight, CircleAlert, Globe2, Trash2, X } from "lucide-react";
 import { normalizeStationUrl, type Station } from "./stations";
 
 export default function StationEditor({
@@ -8,26 +8,28 @@ export default function StationEditor({
   onSave,
   onDelete,
   onClose,
-  onContinue,
 }: {
   station: Station | null;
   stations: Station[];
   onSave: (station: Station) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
-  onContinue: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState(station?.name ?? "");
   const [baseUrl, setBaseUrl] = useState(station?.baseUrl ?? "");
   const [error, setError] = useState("");
-  const [savedStation, setSavedStation] = useState<Station | null>(null);
   useEffect(() => {
     const element = dialog.current!;
     element.showModal();
     element.querySelector<HTMLInputElement>("#station-name")?.focus();
     return () => element.close();
   }, []);
+  useEffect(() => {
+    if (!station) return;
+    setName(station.name);
+    setBaseUrl(station.baseUrl);
+  }, [station]);
   function submit(event: FormEvent) {
     event.preventDefault();
     try {
@@ -64,11 +66,6 @@ export default function StationEditor({
         baseUrl: normalized,
       };
       onSave(next);
-      if (station) {
-        onClose();
-      } else {
-        setSavedStation(next);
-      }
     } catch (error) {
       setError(
         error instanceof Error
@@ -97,31 +94,15 @@ export default function StationEditor({
           <X size={18} />
         </button>
       </div>
-      {savedStation ? (
-        <section className="station-saved" aria-live="polite">
-          <span className="station-saved-icon" aria-hidden="true">
-            <Check size={24} strokeWidth={2.4} />
-          </span>
-          <h2 id="station-dialog-title">Gateway selected</h2>
-          <p className="dialog-intro">
-            <strong>{savedStation.name}</strong> is saved and selected for this connection.
-          </p>
-          <div className="station-saved-address">{savedStation.baseUrl}</div>
-          <div className="dialog-actions">
-            <button type="button" className="secondary-button" onClick={onClose}>
-              Back to gateways
-            </button>
-            <button type="button" className="primary-button" onClick={onContinue}>
-              Continue to client
-              <ArrowRight size={16} />
-            </button>
-          </div>
-        </section>
-      ) : (
-        <>
-          <h2 id="station-dialog-title">{station ? "Edit gateway" : "Add gateway"}</h2>
-          <p className="dialog-intro">Save the name and API address for easy selection next time.</p>
-          <form onSubmit={submit} noValidate>
+      <h2 id="station-dialog-title">{station ? "Edit gateway" : "Add gateway"}</h2>
+      <p className="dialog-intro">Save the name and API address for easy selection next time.</p>
+      {station && (
+        <p className="station-selected-note" role="status">
+          <span aria-hidden="true" />
+          Selected for this connection. You can keep changing its settings here.
+        </p>
+      )}
+      <form onSubmit={submit} noValidate>
             <label htmlFor="station-name">Gateway name</label>
             <input
               id="station-name"
@@ -183,9 +164,7 @@ export default function StationEditor({
                 <ArrowRight size={16} />
               </button>
             </div>
-          </form>
-        </>
-      )}
+      </form>
     </dialog>
   );
 }

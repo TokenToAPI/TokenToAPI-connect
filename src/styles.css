@@ -1454,35 +1454,21 @@ strong {
 .about-copy {
   margin: 14px 0;
 }
-.station-saved {
-  text-align: center;
-  padding: 10px 0 2px;
-}
-.station-saved-icon {
-  display: inline-flex;
+.station-selected-note {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+  gap: 7px;
+  margin: -8px 0 3px;
   color: var(--accent);
-  background: var(--soft);
-  margin: 0 auto 12px;
-}
-.station-saved .dialog-intro {
-  margin-bottom: 12px;
-}
-.station-saved-address {
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--subtle);
-  color: var(--muted);
-  font-family: ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
-  overflow-wrap: anywhere;
-  text-align: left;
+}
+.station-selected-note > span {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
 }
 .station-dialog form > label {
   display: block;
