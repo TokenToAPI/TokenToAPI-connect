@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, CircleAlert, Globe2, Trash2, X } from "lucide-react";
+import { ArrowRight, Check, CircleAlert, Globe2, Trash2, X } from "lucide-react";
 import { normalizeStationUrl, type Station } from "./stations";
 
 export default function StationEditor({
@@ -8,17 +8,20 @@ export default function StationEditor({
   onSave,
   onDelete,
   onClose,
+  onContinue,
 }: {
   station: Station | null;
   stations: Station[];
   onSave: (station: Station) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
+  onContinue: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState(station?.name ?? "");
   const [baseUrl, setBaseUrl] = useState(station?.baseUrl ?? "");
   const [error, setError] = useState("");
+  const [savedStation, setSavedStation] = useState<Station | null>(null);
   useEffect(() => {
     const element = dialog.current!;
     element.showModal();
@@ -55,11 +58,17 @@ export default function StationEditor({
       }
       if (!station && stations.length >= 31)
         throw new Error("You can save up to 30 custom gateways. Delete one you no longer use first.");
-      onSave({
+      const next = {
         id: station?.id ?? `custom-${crypto.randomUUID()}`,
         name: trimmed,
         baseUrl: normalized,
-      });
+      };
+      onSave(next);
+      if (station) {
+        onClose();
+      } else {
+        setSavedStation(next);
+      }
     } catch (error) {
       setError(
         error instanceof Error
@@ -88,71 +97,95 @@ export default function StationEditor({
           <X size={18} />
         </button>
       </div>
-      <h2 id="station-dialog-title">{station ? "Edit gateway" : "Add gateway"}</h2>
-      <p className="dialog-intro">Save the name and API address for easy selection next time.</p>
-      <form onSubmit={submit} noValidate>
-        <label htmlFor="station-name">Gateway name</label>
-        <input
-          id="station-name"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setError("");
-          }}
-          placeholder="e.g. My gateway"
-          maxLength={32}
-          autoComplete="off"
-          autoFocus
-        />
-        <label htmlFor="station-url">API address</label>
-        <input
-          id="station-url"
-          type="url"
-          value={baseUrl}
-          onChange={(e) => {
-            setBaseUrl(e.target.value);
-            setError("");
-          }}
-          placeholder="https://api.example.com"
-          maxLength={2048}
-          spellCheck={false}
-          autoCapitalize="none"
-          autoComplete="off"
-        />
-        <p className="field-hint">
-          Enter the API base address from your provider; /v1 is allowed.
-        </p>
-        {error && (
-          <div className="notice notice-error dialog-error" role="alert">
-            <CircleAlert size={16} />
-            <p>{error}</p>
-          </div>
-        )}
-        {station && (
-          <p className="delete-hint">
-            Deleting only removes the list entry; imported client config isn't affected.
+      {savedStation ? (
+        <section className="station-saved" aria-live="polite">
+          <span className="station-saved-icon" aria-hidden="true">
+            <Check size={24} strokeWidth={2.4} />
+          </span>
+          <h2 id="station-dialog-title">Gateway selected</h2>
+          <p className="dialog-intro">
+            <strong>{savedStation.name}</strong> is saved and selected for this connection.
           </p>
-        )}
-        <div className="dialog-actions">
-          {station && (
-            <button
-              type="button"
-              className="delete-button"
-              onClick={() => onDelete(station.id)}
-            >
-              <Trash2 size={15} />
-              Delete
+          <div className="station-saved-address">{savedStation.baseUrl}</div>
+          <div className="dialog-actions">
+            <button type="button" className="secondary-button" onClick={onClose}>
+              Back to gateways
             </button>
-          )}
-          <button type="button" className="secondary-button" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="primary-button">
-            {station ? "Save changes" : "Save and select"}
-            <ArrowRight size={16} />
-          </button>
-        </div>
-      </form>
+            <button type="button" className="primary-button" onClick={onContinue}>
+              Continue to client
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </section>
+      ) : (
+        <>
+          <h2 id="station-dialog-title">{station ? "Edit gateway" : "Add gateway"}</h2>
+          <p className="dialog-intro">Save the name and API address for easy selection next time.</p>
+          <form onSubmit={submit} noValidate>
+            <label htmlFor="station-name">Gateway name</label>
+            <input
+              id="station-name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError("");
+              }}
+              placeholder="e.g. My gateway"
+              maxLength={32}
+              autoComplete="off"
+              autoFocus
+            />
+            <label htmlFor="station-url">API address</label>
+            <input
+              id="station-url"
+              type="url"
+              value={baseUrl}
+              onChange={(e) => {
+                setBaseUrl(e.target.value);
+                setError("");
+              }}
+              placeholder="https://api.example.com"
+              maxLength={2048}
+              spellCheck={false}
+              autoCapitalize="none"
+              autoComplete="off"
+            />
+            <p className="field-hint">
+              Enter the API base address from your provider; /v1 is allowed.
+            </p>
+            {error && (
+              <div className="notice notice-error dialog-error" role="alert">
+                <CircleAlert size={16} />
+                <p>{error}</p>
+              </div>
+            )}
+            {station && (
+              <p className="delete-hint">
+                Deleting only removes the list entry; imported client config isn't affected.
+              </p>
+            )}
+            <div className="dialog-actions">
+              {station && (
+                <button
+                  type="button"
+                  className="delete-button"
+                  onClick={() => onDelete(station.id)}
+                >
+                  <Trash2 size={15} />
+                  Delete
+                </button>
+              )}
+              <button type="button" className="secondary-button" onClick={onClose}>
+                Cancel
+              </button>
+              <button type="submit" className="primary-button">
+                {station ? "Save changes" : "Save and select"}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </form>
+        </>
+      )}
     </dialog>
   );
 }

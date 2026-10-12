@@ -223,7 +223,6 @@ export default function App() {
         ? preferences.custom.map((item) => (item.id === next.id ? next : item))
         : [...preferences.custom, next],
     });
-    setEditing(undefined);
   }
   function changeClient(next: Client) {
     if (next === client) return;
@@ -1091,6 +1090,10 @@ export default function App() {
             setEditing(undefined);
           }}
           onClose={() => setEditing(undefined)}
+          onContinue={() => {
+            setEditing(undefined);
+            go(1);
+          }}
         />
       )}
       {showRestore && (
