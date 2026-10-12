@@ -1,1 +1,1 @@
-03708ca731e7c8fe39aaccb91a589cb137c51379470a51cc20025151597d15bf  TokenToAPI-Connect-0.1.3-macOS-arm64.zip
+31833a7eb8120d121e07fbcb4d06d6a735e21f9768398f176fb6f59d5a08b941  TokenToAPI-Connect-0.1.3-macOS-arm64.zip

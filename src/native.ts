@@ -104,6 +104,7 @@ export interface HandoffSetup {
   providerName: string;
   baseUrl: string;
   suggestedClient: Client;
+  allowedClients: Client[];
   gatewayNeedsReview: boolean;
 }
 export function pendingHandoff(): Promise<PendingHandoff | null> {

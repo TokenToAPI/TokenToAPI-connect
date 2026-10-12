@@ -82,6 +82,7 @@ pub struct HandoffSetup {
     pub base_url: String,
     pub api_key: String,
     pub suggested_client: models::Client,
+    pub allowed_clients: Vec<models::Client>,
 }
 
 pub async fn redeem(link: &HandoffLink, allow_loopback: bool) -> Result<HandoffSetup, String> {
@@ -131,6 +132,12 @@ pub async fn redeem(link: &HandoffLink, allow_loopback: bool) -> Result<HandoffS
     {
         return Err(RETRY.into());
     }
+    if setup.allowed_clients.is_empty()
+        || setup.allowed_clients.len() > 5
+        || !setup.allowed_clients.contains(&setup.suggested_client)
+    {
+        return Err(RETRY.into());
+    }
     if setup.base_url.len() > 2048 {
         return Err(RETRY.into());
     }
@@ -156,6 +163,7 @@ pub struct SetupView {
     pub provider_name: String,
     pub base_url: String,
     pub suggested_client: models::Client,
+    pub allowed_clients: Vec<models::Client>,
     pub gateway_needs_review: bool,
 }
 
@@ -209,6 +217,7 @@ impl HandoffState {
             provider_name: setup.provider_name.clone(),
             base_url: setup.base_url.clone(),
             suggested_client: setup.suggested_client,
+            allowed_clients: setup.allowed_clients.clone(),
             gateway_needs_review: origin != link.issuer,
         };
         self.accepted = Some((request_id.into(), setup));
@@ -225,7 +234,7 @@ impl HandoffState {
             .as_ref()
             .filter(|(id, _)| id == request_id)
             .ok_or(RETRY)?;
-        if setup.suggested_client.is_codex() != client.is_codex() {
+        if !setup.allowed_clients.contains(&client) {
             return Err("Choose a client compatible with this API key.".into());
         }
         Ok(models::DiscoveryInput {

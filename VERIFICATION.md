@@ -2,9 +2,10 @@
 
 Prepared on 2026-10-12. This is a local candidate, not a published release.
 
-- 66 Rust core tests pass, including strict handoff parsing, replay-sensitive redemption fixtures, error redaction, native credential retention and cancellation.
-- 12 frontend state tests pass. TypeScript, frontend build, desktop Rust compilation and Clippy pass.
+- 67 Rust core tests pass, including strict handoff parsing, replay-sensitive redemption fixtures, error redaction, native credential retention and cancellation.
+- 12 frontend state tests and 3 App/RestorePanel lifecycle tests pass. TypeScript, frontend build, desktop Rust compilation and Clippy pass.
 - A separately identified debug app uses a temporary home and fake fixture key for browser import/restore checks. Microsoft Edge app-opening, gateway review, model fetching, import and restore are verified in that isolated environment.
+- Regression checks cover mixed-group client choice, Claude Code-only restrictions, queued imports during restore, normalized unsupported-group errors, and configured-to-empty gateway changes.
 - The macOS arm64 candidate is built locally. Signature, version, protocol registration and archive integrity are checked before handover. It remains ad-hoc signed and not Developer ID notarized.
 - Windows runtime and portable protocol registration have not been executed on Windows for this candidate. Its package remains a release-preparation step; do not imply that the macOS test validates Windows.
 - Platform frontend tests pass; its focused handoff backend tests and build pass. Four unrelated account-management test failures reproduce in the unchanged platform checkout and remain reported separately.

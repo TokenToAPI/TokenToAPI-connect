@@ -205,11 +205,11 @@ export default function App() {
     return () => { disposed = true; stop?.(); };
   }, []);
   useEffect(() => {
-    if (pendingImport && attemptedHandoff.current !== pendingImport.requestId && shouldAutoAccept(pendingImport.knownIssuer, disabled, hasSetupWork)) {
+    if (pendingImport && attemptedHandoff.current !== pendingImport.requestId && shouldAutoAccept(pendingImport.knownIssuer, disabled || showRestore, hasSetupWork)) {
       attemptedHandoff.current = pendingImport.requestId;
       void receivePlatformImport(pendingImport);
     }
-  }, [pendingImport, disabled, hasSetupWork]);
+  }, [pendingImport, disabled, hasSetupWork, showRestore]);
 
   async function loadPlatformModels(setup: HandoffSetup, target: Client) {
     const fetched = await discoverHandoffModels(setup.requestId, target);
@@ -218,14 +218,14 @@ export default function App() {
     setClient(target); setStep(3); setFurthest(3); setQuery(""); setError("");
   }
   async function receivePlatformImport(pending: PendingHandoff) {
-    if (disabled) return;
+    if (disabled || showRestore) return;
     setBusy("handoff"); setHandoffError("");
     try {
       const setup = await acceptHandoff(pending.requestId);
       setApiKey(""); setVisible(false); setDiscovery(null); setSelection(EMPTY_SELECTION);
       setResult(null); setEditing(undefined); setRestored(false);
       setHandoffSetup(setup); setPendingImport(null); setGatewayReview(setup.gatewayNeedsReview);
-      const target: Client = setup.suggestedClient === "codex" ? "codex-desktop" : "claude";
+      const target: Client = setup.suggestedClient === "codex" && setup.allowedClients.includes("codex-desktop") ? "codex-desktop" : setup.suggestedClient;
       setClient(target);
       if (!setup.gatewayNeedsReview) await loadPlatformModels(setup, target);
     } catch (cause) {
@@ -338,7 +338,7 @@ export default function App() {
   function changeClient(next: Client) {
     if (next === client) return;
     if (handoffSetup) {
-      if (clientFamily(next) !== clientFamily(handoffSetup.suggestedClient)) { setError("Choose a client compatible with this imported API key."); return; }
+      if (!handoffSetup.allowedClients.includes(next)) { setError("Choose a client compatible with this imported API key."); return; }
       setClient(next); setDiscovery(null); setSelection(EMPTY_SELECTION);
       void fetchPlatformModels(next); return;
     }
@@ -495,7 +495,7 @@ export default function App() {
           </button>
         </div>
       </header>
-      {(pendingImport || gatewayReview) && (
+      {!showRestore && (pendingImport || gatewayReview) && (
         <HandoffPanel pending={pendingImport} setup={gatewayReview ? handoffSetup : null}
           hasWork={hasSetupWork} busy={disabled} error={handoffError}
           onAccept={() => { if (gatewayReview) void fetchPlatformModels(); else if (pendingImport) void receivePlatformImport(pendingImport); }}
@@ -506,7 +506,7 @@ export default function App() {
           <span>Platform import · {handoffSetup.providerName} · {handoffSetup.baseUrl}</span>
           <div><button className="text-button" disabled={disabled} onClick={() => { void fetchPlatformModels(); }}>Refresh models</button>
           <select aria-label="Client for platform import" value={client} disabled={disabled} onChange={event => changeClient(event.target.value as Client)}>
-            {clients.filter(item => clientFamily(item.id) === clientFamily(handoffSetup.suggestedClient)).map(item => <option value={item.id} key={item.id}>{item.name}</option>)}
+            {clients.filter(item => handoffSetup.allowedClients.includes(item.id)).map(item => <option value={item.id} key={item.id}>{item.name}</option>)}
           </select>
           <button className="text-button" disabled={disabled} onClick={() => { void cancelPlatformImport(); }}>Cancel import</button></div>
         </div>}

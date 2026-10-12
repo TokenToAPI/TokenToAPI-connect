@@ -61,7 +61,7 @@ fn server(status: &str, extra: &str, body: &str) -> (String, std::thread::JoinHa
 }
 #[tokio::test]
 async fn redeem_uses_body_and_keeps_credentials_native() {
-    let body = r#"{"code":0,"data":{"version":1,"providerName":"TokenToAPI","baseUrl":"https://example.test/v1","apiKey":"sk-local-fixture-only","suggestedClient":"codex"}}"#;
+    let body = r#"{"code":0,"data":{"version":1,"providerName":"TokenToAPI","baseUrl":"https://example.test/v1","apiKey":"sk-local-fixture-only","suggestedClient":"codex","allowedClients":["codex","codex-desktop"]}}"#;
     let (root, thread) = server("200 OK", "", body);
     let url = format!(
         "tokentoapi-connect://v1/import?issuer={}&code={}",
@@ -138,7 +138,7 @@ fn cancelling_a_queued_link_keeps_the_accepted_credentials_and_review() {
     let mut state = handoff::HandoffState::default();
     assert!(state.receive(&first_url, false));
     let first = state.pending().unwrap();
-    let setup: handoff::HandoffSetup = serde_json::from_str(r#"{"version":1,"providerName":"TokenToAPI","baseUrl":"https://example.test","apiKey":"sk-local-fixture-only","suggestedClient":"codex"}"#).unwrap();
+    let setup: handoff::HandoffSetup = serde_json::from_str(r#"{"version":1,"providerName":"TokenToAPI","baseUrl":"https://example.test","apiKey":"sk-local-fixture-only","suggestedClient":"codex","allowedClients":["codex","codex-desktop"]}"#).unwrap();
     let public = state.accept(&first.request_id, setup).unwrap();
     assert_eq!(
         state.completion_provider("https://example.test"),
@@ -172,4 +172,40 @@ fn cancelling_a_queued_link_keeps_the_accepted_credentials_and_review() {
             tokentoapi_connect_lib::models::Client::Codex
         )
         .is_err());
+}
+
+#[test]
+fn authoritative_client_choices_support_mixed_and_code_only_groups() {
+    use tokentoapi_connect_lib::models::Client;
+    for (allowed, suggested, permitted, blocked) in [
+        (
+            r#"["codex","claude"]"#,
+            "codex",
+            Client::Claude,
+            Client::ClaudeDesktop,
+        ),
+        (
+            r#"["claude","claude-vscode"]"#,
+            "claude",
+            Client::ClaudeVscode,
+            Client::ClaudeDesktop,
+        ),
+    ] {
+        let mut state = handoff::HandoffState::default();
+        let url = format!(
+            "tokentoapi-connect://v1/import?issuer=https://example.test&code={}",
+            "A".repeat(43)
+        );
+        assert!(state.receive(&url, false));
+        let pending = state.pending().unwrap();
+        let json = format!(
+            r#"{{"version":1,"providerName":"Fixture","baseUrl":"https://example.test","apiKey":"sk-local-fixture-only","suggestedClient":"{suggested}","allowedClients":{allowed}}}"#
+        );
+        let setup: handoff::HandoffSetup = serde_json::from_str(&json).unwrap();
+        state.accept(&pending.request_id, setup).unwrap();
+        assert!(state
+            .discovery_input(&pending.request_id, permitted)
+            .is_ok());
+        assert!(state.discovery_input(&pending.request_id, blocked).is_err());
+    }
 }

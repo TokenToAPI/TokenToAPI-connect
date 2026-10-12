@@ -35,7 +35,7 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(200, {'code': 0, 'data': {
             'version': 1, 'providerName': 'Isolated fixture gateway',
             'baseUrl': 'http://127.0.0.1:18473',
-            'apiKey': 'sk-local-fixture-only', 'suggestedClient': 'codex'}})
+            'apiKey': 'sk-local-fixture-only', 'suggestedClient': 'codex', 'allowedClients': ['codex', 'codex-desktop']}})
 
     def do_GET(self):
         if self.path in ('/fixture/issue', '/fixture/launch'):
