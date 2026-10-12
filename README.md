@@ -4,7 +4,7 @@
 
 A simple local API configurator. Choose a gateway, pick Claude or Codex, enter your API Key, select the models you need, and import.
 
-**v0.1.2 · Latest release** · [Download](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.2) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
+**v0.1.3 · Release candidate** · [Download](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.2) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
 
 ## Download & usage
 
@@ -22,6 +22,25 @@ No Node.js or Rust installation is required at runtime. The macOS package is for
 ### Download warning "Not a commonly downloaded file"
 
 Browsers or the OS may show interception warnings such as "not a commonly downloaded file" for unsigned / unnotarized release packages. This is a routine file-reputation check and does not mean the file has been detected as malware. Keep your browser's protection settings enabled; if you cannot accept the trust status of the current release package, defer the installation or build it yourself after reviewing the source. If you encounter a different interception message, please provide the exact text via Issues and do not include your API Key.
+
+### Import from the TokenToAPI platform
+
+Connect v0.1.3 adds the platform's **Import to Connect** handoff. This requires
+both the updated platform and Connect v0.1.3; v0.1.2 cannot handle these links.
+The v0.1.3 download links become available when its release is published.
+
+1. Open API Keys on the platform and choose **Import to Connect** for your key.
+2. Click **Open TokenToAPI Connect** and allow the browser to open the app.
+3. Connect fills the gateway and client and fetches the key's models. Confirm
+   an unfamiliar platform or gateway when prompted.
+4. Review the selected models and default, then click **Import**.
+5. Fully quit and reopen the configured client and start a new local session.
+
+If the app is missing, install it, open it once, then return to the platform
+and prepare a new import link. Links expire after two minutes and work only
+once. The link contains an opaque handoff code, never the permanent API key.
+Manual setup remains available. Changing the target client requires a client
+compatible with the key's protocol; unsupported native clients use manual setup.
 
 ### Configuration steps
 
@@ -68,7 +87,7 @@ For development and local builds, install:
 
 - Node.js 22 or newer (Node.js 24 recommended)
 - pnpm 10
-- Rust stable via [rustup](https://rustup.rs/)
+- Rust stable 1.90+ via [rustup](https://rustup.rs/)
 - Git
 
 Clone the repository, then install dependencies and run the checks:

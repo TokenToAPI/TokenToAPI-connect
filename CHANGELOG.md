@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.3 — release candidate, 2026-10-12
+
+- Added browser-to-app platform imports through the tokentoapi-connect protocol.
+- Redeems short-lived, single-use handoff codes in native memory; keys stay out of app-opening URLs and browser storage.
+- Prefills gateway and client, fetches models, and requires Import before changing configuration.
+- Supports cold and running-app handoffs, unfamiliar-platform review, retry, and cancellation.
+- Keeps the imported gateway name in the success summary and preserves existing backup/restore behavior.
+
+
 ## v0.1.2 - 2026-10-12
 
 - Made custom gateway settings continuously editable: adding a gateway selects it and keeps its settings open, while later edits remain in place with an explicit saved-state confirmation.

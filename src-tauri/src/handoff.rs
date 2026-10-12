@@ -254,4 +254,10 @@ impl HandoffState {
     pub fn clear_accepted(&mut self) {
         self.accepted = None;
     }
+    pub fn completion_provider(&self, base_url: &str) -> Option<String> {
+        self.accepted
+            .as_ref()
+            .filter(|(_, setup)| setup.base_url == base_url)
+            .map(|(_, setup)| setup.provider_name.clone())
+    }
 }

@@ -580,7 +580,7 @@ export default function App() {
               <div className="connection-confirmation">
                 <span className="connection-confirmation-label">Active connection</span>
                 <div className="connection-confirmation-route">
-                  <span>{station.name}</span>
+                  <span>{result.providerName || station.name}</span>
                   <ArrowRight size={15} aria-hidden="true" />
                   <strong>{selectedClient.name}</strong>
                 </div>
@@ -598,7 +598,7 @@ export default function App() {
               <div className="result-summary" aria-label="Configuration details">
                 <div>
                   <span>Gateway</span>
-                  <strong>{station.name}</strong>
+                  <strong>{result.providerName || station.name}</strong>
                 </div>
                 <div>
                   <span>Imported models</span>

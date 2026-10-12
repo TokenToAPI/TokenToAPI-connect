@@ -38,13 +38,24 @@ class Handler(BaseHTTPRequestHandler):
             'apiKey': 'sk-local-fixture-only', 'suggestedClient': 'codex'}})
 
     def do_GET(self):
-        if self.path == '/fixture/issue':
+        if self.path in ('/fixture/issue', '/fixture/launch'):
             handoffs.clear()
             code = secrets.token_urlsafe(32)
             handoffs[code] = time.time() + 120
             url = 'tokentoapi-connect://v1/import?' + urlencode({
                 'issuer': 'http://127.0.0.1:18473', 'code': code})
-            self.reply(200, {'url': url})
+            if self.path == '/fixture/launch':
+                body = ('<!doctype html><html><body><h1>Isolated Connect test</h1>'
+                        '<p>Uses a fake key and a temporary client home.</p>'
+                        '<a href="' + url.replace('&', '&amp;') + '">Open Connect test handoff</a>'
+                        '</body></html>').encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.reply(200, {'url': url})
             return
         if self.path != '/v1/models':
             self.send_error(404)

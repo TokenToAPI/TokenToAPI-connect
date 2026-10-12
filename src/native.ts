@@ -24,6 +24,7 @@ export interface Status {
   clients: ClientStatus[];
 }
 export interface ImportResult {
+  providerName?: string | null;
   client: Client;
   model: string;
   selectedModels: string[];

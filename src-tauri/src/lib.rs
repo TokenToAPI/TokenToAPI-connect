@@ -115,7 +115,12 @@ mod desktop {
             .as_ref()
             .ok_or("Fetch the available models first.")?
             .prepare(&input)?;
-        let result = adapter::apply(&state.paths, validated)?;
+        let mut result = adapter::apply(&state.paths, validated)?;
+        result.provider_name = state
+            .handoff
+            .lock()
+            .map_err(|_| "Could not read the imported gateway.")?
+            .completion_provider(&result.base_url);
         state
             .handoff
             .lock()

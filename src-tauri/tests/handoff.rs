@@ -131,20 +131,45 @@ fn pending_handoffs_deduplicate_and_preserve_accepted_setup() {
 
 #[test]
 fn cancelling_a_queued_link_keeps_the_accepted_credentials_and_review() {
-    let first_url = format!("tokentoapi-connect://v1/import?issuer=https%3A%2F%2Fexample.test&code={}", "A".repeat(43));
+    let first_url = format!(
+        "tokentoapi-connect://v1/import?issuer=https%3A%2F%2Fexample.test&code={}",
+        "A".repeat(43)
+    );
     let mut state = handoff::HandoffState::default();
     assert!(state.receive(&first_url, false));
     let first = state.pending().unwrap();
     let setup: handoff::HandoffSetup = serde_json::from_str(r#"{"version":1,"providerName":"TokenToAPI","baseUrl":"https://example.test","apiKey":"sk-local-fixture-only","suggestedClient":"codex"}"#).unwrap();
     let public = state.accept(&first.request_id, setup).unwrap();
-    assert!(!serde_json::to_string(&public).unwrap().contains("sk-local-fixture-only"));
+    assert_eq!(
+        state.completion_provider("https://example.test"),
+        Some("TokenToAPI".to_string())
+    );
+    assert_eq!(state.completion_provider("https://different.test"), None);
+    assert!(!serde_json::to_string(&public)
+        .unwrap()
+        .contains("sk-local-fixture-only"));
     let second_url = first_url.replace(&"A".repeat(43), &("A".repeat(42) + "E"));
     assert!(state.receive(&second_url, false));
     let second = state.pending().unwrap();
     assert!(!state.cancel(&second.request_id));
-    let input = state.discovery_input(&first.request_id, tokentoapi_connect_lib::models::Client::CodexDesktop).unwrap();
+    let input = state
+        .discovery_input(
+            &first.request_id,
+            tokentoapi_connect_lib::models::Client::CodexDesktop,
+        )
+        .unwrap();
     assert_eq!(input.api_key, "sk-local-fixture-only");
-    assert!(state.discovery_input(&first.request_id, tokentoapi_connect_lib::models::Client::Claude).is_err());
+    assert!(state
+        .discovery_input(
+            &first.request_id,
+            tokentoapi_connect_lib::models::Client::Claude
+        )
+        .is_err());
     assert!(state.cancel(&first.request_id));
-    assert!(state.discovery_input(&first.request_id, tokentoapi_connect_lib::models::Client::Codex).is_err());
+    assert!(state
+        .discovery_input(
+            &first.request_id,
+            tokentoapi_connect_lib::models::Client::Codex
+        )
+        .is_err());
 }
