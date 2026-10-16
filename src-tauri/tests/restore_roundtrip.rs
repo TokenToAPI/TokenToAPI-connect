@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use tokentoapi_connect_lib::{
     adapter,
-    models::{Client, ValidatedInput},
+    models::{self, Client, ValidatedInput},
     restore::{self, RestorePoint},
     storage::{self, FileKind, Paths},
 };
@@ -62,7 +62,13 @@ fn changing_stations_keeps_initial_config_and_login_and_adds_new_files_to_baseli
     adapter::apply(&paths, input(Client::Codex, "one")).unwrap();
     let first_timestamp = point(&paths, Client::Codex).created_at;
     let mut next = input(Client::CodexDesktop, "two");
-    next.catalog = Some("{\"models\":[]}".into());
+    next.catalog = Some(
+        models::build_codex_catalog(
+            &json!({"data":[{"id":"gpt-test","context_window":128000}]}),
+            &next.selected_models,
+        )
+        .unwrap(),
+    );
     adapter::apply(&paths, next).unwrap();
     assert_eq!(point(&paths, Client::Codex).created_at, first_timestamp);
     assert_eq!(point(&paths, Client::Codex).files.len(), 3);

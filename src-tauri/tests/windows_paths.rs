@@ -2,7 +2,7 @@
 use std::fs;
 use tokentoapi_connect_lib::{
     adapter,
-    models::{Client, ValidatedInput},
+    models::{self, Client, ValidatedInput},
     restore,
     storage::{self, FileKind, Paths},
 };
@@ -24,7 +24,13 @@ fn unicode_home_catalog_and_original_crlf_auth_round_trip() {
             root: "https://gateway.example.test".into(),
             model: "gpt-fixture".into(),
             selected_models: vec!["gpt-fixture".into()],
-            catalog: Some("{\"models\":[]}".into()),
+            catalog: Some(
+                models::build_codex_catalog(
+                    &serde_json::json!({"data":[{"id":"gpt-fixture","context_window":128000}]}),
+                    &["gpt-fixture".into()],
+                )
+                .unwrap(),
+            ),
         },
     )
     .unwrap();

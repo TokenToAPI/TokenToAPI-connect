@@ -199,22 +199,19 @@ fn model_identifier(row: &Value) -> Option<&str> {
         .or_else(|| row.get("slug").and_then(Value::as_str))
 }
 
-const KNOWN_CODEX_REASONING_MODELS: &[&str] =
-    &["gpt-5.5", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra"];
 const CODEX_MODEL_METADATA_FIELDS: &[&str] = &[
     "display_name",
     "description",
     "context_window",
     "max_context_window",
+    "auto_compact_token_limit",
     "effective_context_window_percent",
     "input_modalities",
+    "default_reasoning_level",
+    "supported_reasoning_levels",
+    "supports_reasoning_summaries",
+    "multi_agent_reasoning_effort",
 ];
-const VALID_REASONING_EFFORTS: &[&str] = &["none", "minimal", "low", "medium", "high", "xhigh"];
-const STANDARD_CODEX_REASONING_EFFORTS: &[&str] = &["low", "medium", "high", "xhigh"];
-
-fn is_reasoning_effort(value: &str) -> bool {
-    VALID_REASONING_EFFORTS.contains(&value)
-}
 
 fn reasoning_description(effort: &str) -> &'static str {
     match effort {
@@ -228,96 +225,94 @@ fn reasoning_description(effort: &str) -> &'static str {
     }
 }
 
-fn reasoning_level(effort: &str, description: Option<&str>) -> Value {
-    json!({
-        "effort": effort,
-        "description": description
-            .filter(|value| !value.trim().is_empty())
-            .unwrap_or_else(|| reasoning_description(effort)),
-    })
+fn effort_string(value: &mut Value) -> Result<(), String> {
+    if value.is_number() {
+        *value = json!(value.to_string());
+    }
+    if !value
+        .as_str()
+        .is_some_and(|effort| !effort.trim().is_empty() && !effort.chars().any(char::is_control))
+    {
+        return Err(
+            "The gateway declared an invalid reasoning effort; no configuration was written."
+                .into(),
+        );
+    }
+    Ok(())
 }
 
-// Gateways commonly expose levels as strings, while Codex expects objects. Invalid
-// advertised values deliberately result in no options instead of an unsafe fallback.
-fn declared_reasoning_levels(value: Option<&Value>) -> Option<Vec<Value>> {
-    let value = value?;
-    let Some(values) = value.as_array() else {
-        return Some(Vec::new());
-    };
+fn normalize_reasoning_levels(value: &mut Value) -> Result<(), String> {
+    let values = value
+        .as_array()
+        .cloned()
+        .ok_or("The gateway reasoning levels must be an array; no configuration was written.")?;
     let mut levels = Vec::new();
     for value in values {
-        let (effort, description) = match value {
-            Value::String(effort) => (effort.as_str(), None),
+        let (mut effort, description) = match value {
+            Value::String(effort) => (json!(effort), None),
             Value::Object(object) => (
                 object
                     .get("effort")
-                    .and_then(Value::as_str)
-                    .unwrap_or_default(),
-                object.get("description").and_then(Value::as_str),
+                    .cloned()
+                    .ok_or("A gateway reasoning level is missing its effort; no configuration was written.")?,
+                object.get("description").cloned(),
             ),
-            _ => continue,
+            _ => {
+                return Err(
+                    "The gateway declared an invalid reasoning level; no configuration was written."
+                        .into(),
+                )
+            }
         };
-        if is_reasoning_effort(effort)
-            && !levels.iter().any(|level: &Value| level["effort"] == effort)
-        {
-            levels.push(reasoning_level(effort, description));
+        effort_string(&mut effort)?;
+        let label = effort.as_str().unwrap();
+        let description =
+            match description {
+                Some(Value::String(text)) if !text.trim().is_empty() => text,
+                Some(Value::String(_)) | None | Some(Value::Null) => {
+                    let known = reasoning_description(label);
+                    if known.is_empty() {
+                        format!("{label} reasoning effort")
+                    } else {
+                        known.to_string()
+                    }
+                }
+                _ => return Err(
+                    "A gateway reasoning description must be text; no configuration was written."
+                        .into(),
+                ),
+            };
+        if !levels.iter().any(|level: &Value| level["effort"] == effort) {
+            levels.push(json!({"effort":effort,"description":description}));
         }
     }
-    Some(levels)
+    *value = Value::Array(levels);
+    Ok(())
 }
 
-fn reasoning_capabilities(
-    id: &str,
-    original: Option<&serde_json::Map<String, Value>>,
-) -> (Value, Value) {
-    let declared =
-        original.and_then(|row| declared_reasoning_levels(row.get("supported_reasoning_levels")));
-    let levels = declared.unwrap_or_else(|| {
-        if KNOWN_CODEX_REASONING_MODELS
+fn model_profile<'a>(profiles: &'a Value, id: &str) -> Option<&'a Value> {
+    let profiles = profiles.as_object()?;
+    profiles.get(id).or_else(|| {
+        profiles
             .iter()
-            .any(|known| known.eq_ignore_ascii_case(id))
-        {
-            STANDARD_CODEX_REASONING_EFFORTS
-                .iter()
-                .map(|effort| reasoning_level(effort, None))
-                .collect()
-        } else {
-            Vec::new()
-        }
-    });
-    let default = original
-        .and_then(|row| row.get("default_reasoning_level"))
-        .and_then(Value::as_str)
-        .filter(|effort| levels.iter().any(|level| level["effort"] == *effort))
-        .or_else(|| {
-            levels
-                .iter()
-                .find(|level| level["effort"] == "medium")
-                .and_then(|level| level["effort"].as_str())
-        })
-        .or_else(|| levels.first().and_then(|level| level["effort"].as_str()));
-    (
-        default.map_or(Value::Null, |effort| json!(effort)),
-        Value::Array(levels),
-    )
+            .find(|(name, _)| name.eq_ignore_ascii_case(id))
+            .map(|(_, row)| row)
+    })
 }
 
-fn bounded_u64(value: Option<&Value>, minimum: u64, maximum: u64) -> Option<u64> {
-    value
-        .and_then(Value::as_u64)
-        .filter(|value| (minimum..=maximum).contains(value))
+fn find_payload_model<'a>(payload: &'a Value, id: &str) -> Option<&'a Value> {
+    ["data", "models"].into_iter().find_map(|key| {
+        payload.get(key).and_then(Value::as_array).and_then(|rows| {
+            rows.iter()
+                .find(|row| model_identifier(row).is_some_and(|candidate| candidate.trim() == id))
+        })
+    })
 }
 
 fn normalize_catalog_shape(row: &mut Value) {
-    let context_window =
-        bounded_u64(row.get("context_window"), 1024, 16 * 1024 * 1024).unwrap_or(32768);
-    row["context_window"] = json!(context_window);
-    let max_context_window = bounded_u64(row.get("max_context_window"), 1024, 16 * 1024 * 1024)
-        .unwrap_or(context_window)
-        .max(context_window);
-    row["max_context_window"] = json!(max_context_window);
-    let percent = bounded_u64(row.get("effective_context_window_percent"), 1, 100).unwrap_or(95);
-    row["effective_context_window_percent"] = json!(percent);
+    if row["effective_context_window_percent"].is_null() {
+        row["effective_context_window_percent"] = json!(95);
+    }
     if !row.get("input_modalities").is_some_and(|value| {
         value.as_array().is_some_and(|items| {
             !items.is_empty() && items.iter().all(|item| item.as_str().is_some())
@@ -460,50 +455,160 @@ pub fn build_codex_catalog(payload: &Value, selected: &[String]) -> Result<Strin
         "resources/codex_native_responses_template.json"
     ))
     .map_err(|_| "The model catalog template is unavailable.")?;
-    let source = model_rows(payload);
+    let profiles: Value = serde_json::from_str(include_str!("resources/codex_model_profiles.json"))
+        .map_err(|_| "The built-in Codex model profiles are unavailable.")?;
+    let mut context_sources = json!({});
+    let mut gateway_context_fields = json!({});
     let entries: Vec<Value> = selected
         .iter()
         .enumerate()
-        .map(|(index, id)| {
+        .map(|(index, id)| -> Result<Value, String> {
             let mut row = template.clone();
-            // Names alone do not declare capabilities, including a slug-only native catalog.
-            row["context_window"] = json!(32768);
-            row["max_context_window"] = json!(32768);
+            row["context_window"] = Value::Null;
+            row["max_context_window"] = Value::Null;
+            row["auto_compact_token_limit"] = Value::Null;
+            row["effective_context_window_percent"] = json!(95);
             row["input_modalities"] = json!(["text"]);
+            row["default_reasoning_level"] = Value::Null;
+            row["supported_reasoning_levels"] = json!([]);
             row["supports_reasoning_summaries"] = json!(false);
-            let original = source
-                .and_then(|rows| {
-                    rows.iter().find(|model| {
-                        model_identifier(model).is_some_and(|candidate| candidate.trim() == id)
-                    })
-                })
-                .and_then(Value::as_object);
+            row["display_name"] = json!(id);
+            row["description"] = json!(id);
+            let profile = model_profile(&profiles, id);
+            context_sources[id] = json!(if profile.is_some() { "bundled" } else { "unknown" });
+            if let Some(profile) = profile {
+                for key in crate::codex_context::FIELDS {
+                    row[key] = profile[key].clone();
+                }
+                row["default_reasoning_level"] = profile["default"].clone();
+                row["supported_reasoning_levels"] = Value::Array(
+                    profile["levels"]
+                        .as_array()
+                        .ok_or("A built-in reasoning profile is invalid.")?
+                        .iter()
+                        .map(|effort| {
+                            let label = effort.as_str().unwrap_or_default();
+                            let known = reasoning_description(label);
+                            json!({
+                                "effort": effort,
+                                "description": if known.is_empty() {
+                                    format!("{label} reasoning effort")
+                                } else {
+                                    known.to_string()
+                                }
+                            })
+                        })
+                        .collect(),
+                );
+                row["supports_reasoning_summaries"] = json!(true);
+                if !profile["multi_agent_reasoning_effort"].is_null() {
+                    row["multi_agent_reasoning_effort"] = profile["multi_agent_reasoning_effort"].clone();
+                }
+            }
+
+            let original = find_payload_model(payload, id).and_then(Value::as_object);
+            let gateway_levels = original
+                .is_some_and(|source| source.contains_key("supported_reasoning_levels"));
+            let gateway_summaries = original
+                .is_some_and(|source| source.contains_key("supports_reasoning_summaries"));
+            let mut context_fields = Vec::new();
             if let Some(original) = original {
                 for key in CODEX_MODEL_METADATA_FIELDS {
-                    if let Some(value) = original.get(*key) {
+                    if let Some(value) = original.get(*key).filter(|value| !value.is_null()) {
                         row[*key] = value.clone();
+                        if crate::codex_context::FIELDS.contains(key) {
+                            context_fields.push(*key);
+                        }
+                    }
+                }
+                let gateway_context = original
+                    .get("context_window")
+                    .is_some_and(|value| !value.is_null());
+                let gateway_max = original
+                    .get("max_context_window")
+                    .is_some_and(|value| !value.is_null());
+                if gateway_context && !gateway_max {
+                    row["max_context_window"] = row["context_window"].clone();
+                    context_fields.push("max_context_window");
+                } else if gateway_max && !gateway_context {
+                    if let Some(maximum) = row["max_context_window"].as_i64() {
+                        let context = row["context_window"]
+                            .as_i64()
+                            .map_or(maximum, |context| context.min(maximum));
+                        row["context_window"] = json!(context);
+                        context_fields.push("context_window");
                     }
                 }
             }
-            normalize_catalog_shape(&mut row);
-            let (default_reasoning_level, supported_reasoning_levels) =
-                reasoning_capabilities(id, original);
-            row["default_reasoning_level"] = default_reasoning_level;
-            row["supported_reasoning_levels"] = supported_reasoning_levels;
-            row["slug"] = json!(id);
-            if source.is_none() || row["display_name"] == template["display_name"] {
-                row["display_name"] = json!(id);
-                row["description"] = json!(id);
+
+            context_fields.sort_unstable();
+            context_fields.dedup();
+            if !context_fields.is_empty() {
+                context_sources[id] = json!("gateway");
             }
+            gateway_context_fields[id] = json!(context_fields);
+
+            if !row["default_reasoning_level"].is_null() {
+                effort_string(&mut row["default_reasoning_level"])?;
+            }
+            if !row["multi_agent_reasoning_effort"].is_null() {
+                effort_string(&mut row["multi_agent_reasoning_effort"])?;
+            }
+            normalize_reasoning_levels(&mut row["supported_reasoning_levels"])?;
+            if !row["supports_reasoning_summaries"].is_boolean() {
+                return Err("The gateway reasoning capability flag must be boolean; no configuration was written.".into());
+            }
+            if gateway_levels && !gateway_summaries {
+                row["supports_reasoning_summaries"] = json!(
+                    row["supported_reasoning_levels"]
+                        .as_array()
+                        .is_some_and(|levels| levels.iter().any(|level| level["effort"] != "none"))
+                );
+            }
+            if row["supports_reasoning_summaries"] == false
+                && row["supported_reasoning_levels"]
+                    .as_array()
+                    .is_some_and(|levels| levels.iter().any(|level| level["effort"] != "none"))
+            {
+                return Err("The gateway reasoning levels conflict with its capability flag; Codex cannot send the selected effort. No configuration was written.".into());
+            }
+            let levels = row["supported_reasoning_levels"]
+                .as_array()
+                .ok_or("The generated reasoning levels are invalid.")?;
+            let current_default = row["default_reasoning_level"].clone();
+            let default_is_supported = !current_default.is_null()
+                && levels
+                    .iter()
+                    .any(|level| level["effort"] == current_default);
+            let fallback_default = levels
+                    .iter()
+                    .find(|level| level["effort"] == "medium")
+                    .or_else(|| levels.first())
+                    .map(|level| level["effort"].clone())
+                    .unwrap_or(Value::Null);
+            row["default_reasoning_level"] = if default_is_supported {
+                current_default
+            } else {
+                fallback_default
+            };
+            normalize_catalog_shape(&mut row);
+            crate::codex_context::validate(&row, false)?;
+            row["slug"] = json!(id);
             row["visibility"] = json!("list");
             row["supported_in_api"] = json!(true);
             row["priority"] = json!(index);
             row["upgrade"] = Value::Null;
-            row
+            Ok(row)
         })
-        .collect();
-    serde_json::to_string_pretty(&json!({"models":entries}))
-        .map_err(|_| "Could not generate the model catalog.".into())
+        .collect::<Result<_, String>>()?;
+    serde_json::to_string_pretty(&json!({
+        "models":entries,
+        "_tokentoapi_connect": {
+            "context_sources": context_sources,
+            "gateway_context_fields": gateway_context_fields
+        }
+    }))
+    .map_err(|_| "Could not generate the model catalog.".into())
 }
 
 #[cfg(test)]

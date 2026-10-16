@@ -1,4 +1,5 @@
 pub mod adapter;
+mod codex_context;
 pub mod compatibility;
 pub mod desktop_config;
 pub mod handoff;

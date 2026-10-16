@@ -1,7 +1,7 @@
 use std::fs;
 use tokentoapi_connect_lib::{
     adapter,
-    models::{Client, ValidatedInput},
+    models::{self, Client, ValidatedInput},
     storage::{self, FileKind, Paths},
 };
 
@@ -33,7 +33,13 @@ fn codex_merge_keeps_comments_mcp_and_permissions_and_restores_login_exactly() {
     storage::atomic_write(&paths.target(FileKind::CodexConfig), original.as_bytes()).unwrap();
     storage::atomic_write(&paths.target(FileKind::CodexAuth), auth.as_bytes()).unwrap();
     let mut imported = input(Client::Codex);
-    imported.catalog = Some("{\"models\":[{\"slug\":\"gpt-test-codex\"}]}".into());
+    imported.catalog = Some(
+        models::build_codex_catalog(
+            &serde_json::json!({"data":[{"id":"gpt-test-codex","context_window":128000}]}),
+            &imported.selected_models,
+        )
+        .unwrap(),
+    );
     let result = adapter::apply(&paths, imported).unwrap();
     assert!(result.changed);
     let merged = fs::read_to_string(paths.target(FileKind::CodexConfig)).unwrap();
@@ -170,7 +176,13 @@ fn optional_codex_catalog_is_installed_and_restored_with_the_config() {
     let home = tempfile::tempdir().unwrap();
     let paths = Paths::for_home(home.path());
     let mut data = input(Client::Codex);
-    data.catalog = Some("{\"models\":[{\"slug\":\"gpt-test-codex\"}]}".into());
+    data.catalog = Some(
+        models::build_codex_catalog(
+            &serde_json::json!({"data":[{"id":"gpt-test-codex","context_window":128000}]}),
+            &data.selected_models,
+        )
+        .unwrap(),
+    );
     adapter::apply(&paths, data).unwrap();
     assert!(paths.target(FileKind::CodexCatalog).is_file());
     let config = fs::read_to_string(paths.target(FileKind::CodexConfig)).unwrap();

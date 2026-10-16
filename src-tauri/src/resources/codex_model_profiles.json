@@ -1,0 +1,180 @@
+{
+  "gpt-5.3-codex": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.4": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh"],
+    "context_window": 272000,
+    "max_context_window": 1000000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.2-codex": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.1-codex-max": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.1-codex": {
+    "default": "medium",
+    "levels": ["low", "medium", "high"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.2": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.1": {
+    "default": "medium",
+    "levels": ["low", "medium", "high"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5-codex": {
+    "default": "medium",
+    "levels": ["low", "medium", "high"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5": {
+    "default": "medium",
+    "levels": ["minimal", "low", "medium", "high"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-oss-120b": {
+    "default": "medium",
+    "levels": ["low", "medium", "high"],
+    "context_window": 128000,
+    "max_context_window": 128000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-oss-20b": {
+    "default": "medium",
+    "levels": ["low", "medium", "high"],
+    "context_window": 128000,
+    "max_context_window": 128000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.1-codex-mini": {
+    "default": "medium",
+    "levels": ["medium", "high"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5-codex-mini": {
+    "default": "medium",
+    "levels": ["medium", "high"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.5": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.4-mini": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh"],
+    "context_window": 272000,
+    "max_context_window": 272000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.6-sol": {
+    "default": "low",
+    "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.6-terra": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-6-astra": {
+    "default": "low",
+    "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
+    "multi_agent_reasoning_effort": "xhigh",
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-6.1-sol": {
+    "default": "low",
+    "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
+    "multi_agent_reasoning_effort": "xhigh",
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-6-sol": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-6-luna": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh", "max"],
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  },
+  "gpt-5.6-luna": {
+    "default": "medium",
+    "levels": ["low", "medium", "high", "xhigh", "max"],
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": 95
+  }
+}

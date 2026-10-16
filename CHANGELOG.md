@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.4 - 2026-10-16
+
+- Fixed Codex imports that could leave the effective context window at the legacy 32K fallback.
+- Uses the native Codex model profiles for context capacity, compaction thresholds, thinking levels, numeric efforts, and Ultra mapping instead of guessing from a model name.
+- Preserves valid user-edited `model_context_window`, `model_auto_compact_token_limit`, and supported thinking preferences across repeated imports; gateway-provided limits remain authoritative.
+- Repairs old generated catalogs while rejecting missing or malformed capability metadata before any client file is changed.
+- Added native Codex app-server regression coverage for model selection, context capacity, automatic compaction, repeated import, restoration, numeric efforts, and cross-platform fixtures.
+
 ## v0.1.3 - 2026-10-12
 
 - Added browser-to-app platform imports through the tokentoapi-connect protocol.

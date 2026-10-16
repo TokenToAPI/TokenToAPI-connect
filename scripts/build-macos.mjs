@@ -42,7 +42,11 @@ try {
   fs.copyFileSync(path.join(root, 'LICENSE'), path.join(app, 'Contents/Resources/LICENSE.txt'));
   fs.copyFileSync(path.join(root, 'LICENSE'), path.join(folder, 'LICENSE.txt'));
   fs.cpSync(path.join(root, 'licenses'), path.join(folder, 'licenses'), { recursive: true });
-  run('/usr/bin/codesign', ['--force', '--deep', '--sign', '-', app]);
+  // Tauri's linker-signed executable can cause `codesign --deep` to leave the
+  // outer app bundle unsigned. Sign the nested executable first, then seal the
+  // bundle so its Resources and Info.plist are covered by CodeResources.
+  run('/usr/bin/codesign', ['--force', '--sign', '-', path.join(app, 'Contents/MacOS/tokentoapi-connect')]);
+  run('/usr/bin/codesign', ['--force', '--sign', '-', app]);
   run('/usr/bin/codesign', ['--verify', '--deep', '--strict', app]);
   fs.writeFileSync(path.join(folder, 'README.txt'), `TokenToAPI Connect ${version} · macOS 12+ · Apple Silicon
 

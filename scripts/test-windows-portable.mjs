@@ -8,7 +8,7 @@ const root = process.cwd();
 const stage = path.join(process.env.RUNNER_TEMP, 'Connect Portable Test');
 const ps = command => execFileSync('powershell.exe', ['-NoProfile', '-Command', command], { encoding: 'utf8' });
 const quote = s => "'" + s.replaceAll("'", "''") + "'";
-ps(`Expand-Archive -LiteralPath ${quote(path.join(root, 'release/TokenToAPI-Connect-0.1.3-Windows-x64-portable.zip'))} -DestinationPath ${quote(stage)}`);
+ps(`Expand-Archive -LiteralPath ${quote(path.join(root, 'release/TokenToAPI-Connect-0.1.4-Windows-x64-portable.zip'))} -DestinationPath ${quote(stage)}`);
 const exe = path.join(stage, 'TokenToAPI Connect/TokenToAPI Connect.exe');
 process.env.WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222';
 const delay = ms => new Promise(r => setTimeout(r, ms));

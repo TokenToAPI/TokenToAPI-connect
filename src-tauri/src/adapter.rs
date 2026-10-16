@@ -148,14 +148,66 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
             ));
             if let Some(catalog) = &input.catalog {
                 let catalog_path = paths.target(FileKind::CodexCatalog);
+                let catalog_before = storage::read_optional(&catalog_path)?;
+                let same_route = parsed.get("model_provider").and_then(Item::as_str)
+                    == Some("tokentoapi-connect")
+                    && parsed.get("model_catalog_json").and_then(Item::as_str)
+                        == Some(catalog_path.to_string_lossy().as_ref())
+                    && parsed
+                        .get("model_providers")
+                        .and_then(|providers| providers.get("tokentoapi-connect"))
+                        .and_then(|provider| provider.get("base_url"))
+                        .and_then(Item::as_str)
+                        == Some(format!("{}/v1", input.root).as_str());
+                let cached = storage::read_optional(&paths.codex.join("models_cache.json"))
+                    .ok()
+                    .flatten();
+                let catalog = crate::codex_context::prepare_import(
+                    catalog,
+                    if same_route {
+                        catalog_before.as_deref()
+                    } else {
+                        None
+                    },
+                    cached.as_deref(),
+                )?;
+                let catalog_json: serde_json::Value =
+                    serde_json::from_str(&catalog).map_err(|_| {
+                        "The generated model catalog is invalid; no configuration was written."
+                    })?;
+                if let Some(levels) = catalog_json["models"]
+                    .as_array()
+                    .and_then(|models| models.iter().find(|model| model["slug"] == input.model))
+                    .and_then(|model| model["supported_reasoning_levels"].as_array())
+                {
+                    for key in ["model_reasoning_effort", "plan_mode_reasoning_effort"] {
+                        if let Some(previous) = parsed.get(key) {
+                            let effort = previous
+                                .as_str()
+                                .map(str::to_owned)
+                                .or_else(|| previous.as_integer().map(|number| number.to_string()));
+                            if effort.is_some_and(|effort| {
+                                levels
+                                    .iter()
+                                    .any(|level| level["effort"].as_str() == Some(effort.as_str()))
+                            }) {
+                                let preserved = previous
+                                    .as_integer()
+                                    .map(|number| value(number.to_string()))
+                                    .unwrap_or_else(|| previous.clone());
+                                patch.set.push((KeyPath::new(&[key]), preserved));
+                            }
+                        }
+                    }
+                }
                 patch.set.push((
                     KeyPath::new(&["model_catalog_json"]),
                     value(catalog_path.to_string_lossy().as_ref()),
                 ));
                 changes.push(Change {
                     kind: FileKind::CodexCatalog,
-                    before: storage::read_optional(&catalog_path)?,
-                    after: catalog.clone(),
+                    before: catalog_before,
+                    after: catalog,
                 });
             }
             let after = String::from_utf8(

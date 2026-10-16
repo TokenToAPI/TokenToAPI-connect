@@ -3,7 +3,7 @@ use std::fs;
 use tokentoapi_connect_lib::{
     adapter,
     desktop_config::PROFILE_ID,
-    models::{Client, ValidatedInput},
+    models::{self, Client, ValidatedInput},
     storage::{self, FileKind, Paths},
 };
 
@@ -184,7 +184,13 @@ fn codex_desktop_and_cli_share_catalog_credentials_and_restore_point() {
     let mut data = input(Client::CodexDesktop);
     data.model = "gpt-fixture".into();
     data.selected_models = vec![data.model.clone()];
-    data.catalog = Some("{\"models\":[]}".into());
+    data.catalog = Some(
+        models::build_codex_catalog(
+            &json!({"data":[{"id":"gpt-fixture","context_window":128000}]}),
+            &data.selected_models,
+        )
+        .unwrap(),
+    );
     let result = adapter::apply(&paths, data).unwrap();
     assert_eq!(result.client, Client::CodexDesktop);
     assert!(paths.has_backup(Client::CodexDesktop));

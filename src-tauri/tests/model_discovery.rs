@@ -92,7 +92,11 @@ fn discovered(client: Client) -> models::DiscoveredModels {
         client,
         api_key: "sk-only-in-memory".into(),
         root: "https://example.test".into(),
-        payload: serde_json::json!({"data":[{"id":"custom-a"},{"id":"custom-b"},{"id":"excluded"}]}),
+        payload: serde_json::json!({"data":[
+            {"id":"custom-a","context_window":128000},
+            {"id":"custom-b","context_window":128000},
+            {"id":"excluded","context_window":128000}
+        ]}),
         choices: ["custom-a", "custom-b", "excluded"]
             .into_iter()
             .map(|id| models::ModelChoice {
@@ -136,7 +140,7 @@ fn selection_accepts_only_fetched_models_and_a_selected_default() {
         catalog["models"][0]["input_modalities"],
         serde_json::json!(["text"])
     );
-    assert_eq!(catalog["models"][0]["context_window"], 32768);
+    assert_eq!(catalog["models"][0]["context_window"], 128000);
     assert!(catalog["models"][0]["default_reasoning_level"].is_null());
 }
 
@@ -199,7 +203,10 @@ fn standard_openai_catalog_enables_known_codex_reasoning_levels() {
         .iter()
         .map(|level| level["effort"].as_str().unwrap())
         .collect();
-    assert_eq!(efforts, vec!["low", "medium", "high", "xhigh"]);
+    assert_eq!(
+        efforts,
+        vec!["low", "medium", "high", "xhigh", "max", "ultra"]
+    );
 }
 
 #[test]
@@ -216,7 +223,10 @@ fn known_codex_reasoning_fallback_is_case_insensitive() {
         .iter()
         .map(|level| level["effort"].as_str().unwrap())
         .collect();
-    assert_eq!(efforts, vec!["low", "medium", "high", "xhigh"]);
+    assert_eq!(
+        efforts,
+        vec!["low", "medium", "high", "xhigh", "max", "ultra"]
+    );
 }
 
 #[test]
@@ -280,34 +290,40 @@ fn trimmed_model_ids_keep_gateway_reasoning_metadata() {
 }
 
 #[test]
-fn malformed_gateway_reasoning_metadata_does_not_enable_a_known_model_fallback() {
+fn malformed_gateway_reasoning_metadata_is_rejected_instead_of_silently_downgraded() {
     let payload = serde_json::json!({"data":[{
         "id":"gpt-5.6-terra",
         "supported_reasoning_levels":"high"
     }]});
-    let generated = models::build_codex_catalog(&payload, &["gpt-5.6-terra".into()]).unwrap();
-    let parsed: serde_json::Value = serde_json::from_str(&generated).unwrap();
-    let model = &parsed["models"][0];
-    assert!(model["default_reasoning_level"].is_null());
-    assert_eq!(model["supported_reasoning_levels"], serde_json::json!([]));
+    assert!(models::build_codex_catalog(&payload, &["gpt-5.6-terra".into()]).is_err());
 }
 
 #[test]
-fn malformed_gateway_shape_metadata_falls_back_to_readable_values() {
+fn malformed_gateway_capacities_are_rejected_but_modalities_remain_sanitized() {
     let payload = serde_json::json!({"data":[{
         "id":"custom-a",
-        "context_window":"128000",
-        "max_context_window":-1,
-        "effective_context_window_percent":101,
         "input_modalities":"text"
     }]});
     let generated = models::build_codex_catalog(&payload, &["custom-a".into()]).unwrap();
     let parsed: serde_json::Value = serde_json::from_str(&generated).unwrap();
     let model = &parsed["models"][0];
-    assert_eq!(model["context_window"], 32768);
-    assert_eq!(model["max_context_window"], 32768);
     assert_eq!(model["effective_context_window_percent"], 95);
     assert_eq!(model["input_modalities"], serde_json::json!(["text"]));
+
+    for capacities in [
+        serde_json::json!({"context_window":"128000"}),
+        serde_json::json!({"max_context_window":-1}),
+        serde_json::json!({"context_window":500000,"max_context_window":32768}),
+        serde_json::json!({"effective_context_window_percent":101}),
+    ] {
+        let mut row = capacities;
+        row["id"] = serde_json::json!("custom-a");
+        assert!(models::build_codex_catalog(
+            &serde_json::json!({"data":[row]}),
+            &["custom-a".into()]
+        )
+        .is_err());
+    }
 }
 
 #[test]
@@ -315,7 +331,8 @@ fn slug_only_catalogs_do_not_imply_vision_or_large_context_support() {
     let payload = serde_json::json!({"models":[{"slug":"custom-a"}]});
     let generated = models::build_codex_catalog(&payload, &["custom-a".into()]).unwrap();
     let parsed: serde_json::Value = serde_json::from_str(&generated).unwrap();
-    assert_eq!(parsed["models"][0]["context_window"], 32768);
+    assert!(parsed["models"][0]["context_window"].is_null());
+    assert!(parsed["models"][0]["max_context_window"].is_null());
     assert_eq!(
         parsed["models"][0]["input_modalities"],
         serde_json::json!(["text"])
@@ -324,4 +341,87 @@ fn slug_only_catalogs_do_not_imply_vision_or_large_context_support() {
         parsed["models"][0]["supported_reasoning_levels"],
         serde_json::json!([])
     );
+}
+
+#[test]
+fn gpt_61_sol_and_astra_profiles_support_ultra_and_large_context() {
+    for id in ["gpt-6.1-sol", "gpt-6-astra"] {
+        let generated =
+            models::build_codex_catalog(&serde_json::json!({"data":[{"id":id}]}), &[id.into()])
+                .unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&generated).unwrap();
+        let model = &parsed["models"][0];
+        assert_eq!(model["context_window"], 272000);
+        assert_eq!(model["max_context_window"], 872000);
+        assert_eq!(model["default_reasoning_level"], "low");
+        assert_eq!(model["multi_agent_reasoning_effort"], "xhigh");
+        let efforts: Vec<_> = model["supported_reasoning_levels"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|level| level["effort"].as_str().unwrap())
+            .collect();
+        assert_eq!(
+            efforts,
+            vec!["low", "medium", "high", "xhigh", "max", "ultra"]
+        );
+    }
+}
+
+#[test]
+fn bundled_codex_profiles_cover_the_current_native_catalog() {
+    let ids = [
+        "gpt-5.3-codex",
+        "gpt-5.4",
+        "gpt-5.2-codex",
+        "gpt-5.1-codex-max",
+        "gpt-5.1-codex",
+        "gpt-5.2",
+        "gpt-5.1",
+        "gpt-5-codex",
+        "gpt-5",
+        "gpt-oss-120b",
+        "gpt-oss-20b",
+        "gpt-5.1-codex-mini",
+        "gpt-5-codex-mini",
+        "gpt-5.5",
+        "gpt-5.4-mini",
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-6-astra",
+        "gpt-6.1-sol",
+        "gpt-6-sol",
+        "gpt-6-luna",
+        "gpt-5.6-luna",
+    ];
+    let payload = serde_json::json!({
+        "data": ids.iter().map(|id| serde_json::json!({"id": id})).collect::<Vec<_>>()
+    });
+    let selected = ids.iter().map(|id| (*id).to_string()).collect::<Vec<_>>();
+    let catalog: serde_json::Value =
+        serde_json::from_str(&models::build_codex_catalog(&payload, &selected).unwrap()).unwrap();
+    assert_eq!(catalog["models"].as_array().unwrap().len(), ids.len());
+    for model in catalog["models"].as_array().unwrap() {
+        assert!(model["context_window"].as_u64().unwrap() >= 128000);
+        assert!(!model["supported_reasoning_levels"]
+            .as_array()
+            .unwrap()
+            .is_empty());
+    }
+}
+
+#[test]
+fn numeric_gateway_efforts_are_kept_as_codex_string_options() {
+    let payload = serde_json::json!({"data":[{
+        "id":"numeric-model",
+        "context_window":128000,
+        "supported_reasoning_levels":[{"effort":1024},{"effort":4096}],
+        "default_reasoning_level":4096
+    }]});
+    let generated = models::build_codex_catalog(&payload, &["numeric-model".into()]).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&generated).unwrap();
+    let model = &parsed["models"][0];
+    assert_eq!(model["default_reasoning_level"], "4096");
+    assert_eq!(model["supported_reasoning_levels"][0]["effort"], "1024");
+    assert_eq!(model["supported_reasoning_levels"][1]["effort"], "4096");
 }
