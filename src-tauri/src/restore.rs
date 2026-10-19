@@ -70,6 +70,8 @@ fn label(kind: FileKind) -> &'static str {
 }
 
 fn plan(paths: &Paths, client: Client) -> Result<Plan, String> {
+    let resolved = paths.for_client(client)?;
+    let paths = &resolved;
     let client = client.backup_client();
     let pending = paths.pending(client);
     let record_path = paths.record(client, pending);
@@ -162,6 +164,8 @@ pub fn apply(
     review_id: &str,
     overwrite_modified: bool,
 ) -> Result<RestoreResult, String> {
+    let resolved = paths.for_client(client)?;
+    let paths = &resolved;
     let _lock = paths.lock()?;
     let plan = plan(paths, client)?;
     if plan.point.review_id.as_deref() != Some(review_id) {

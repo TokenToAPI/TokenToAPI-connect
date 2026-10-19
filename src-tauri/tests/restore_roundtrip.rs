@@ -21,6 +21,7 @@ fn input(client: Client, station: &str) -> ValidatedInput {
         model: model.into(),
         selected_models: vec![model.into()],
         catalog: None,
+        options: Default::default(),
     }
 }
 
@@ -71,12 +72,12 @@ fn changing_stations_keeps_initial_config_and_login_and_adds_new_files_to_baseli
     );
     adapter::apply(&paths, next).unwrap();
     assert_eq!(point(&paths, Client::Codex).created_at, first_timestamp);
-    assert_eq!(point(&paths, Client::Codex).files.len(), 3);
+    assert_eq!(point(&paths, Client::Codex).files.len(), 2);
     let latest_config = read(&paths, FileKind::CodexConfig);
     let latest_auth = read(&paths, FileKind::CodexAuth);
     let result = restore(&paths, Client::CodexDesktop, false);
     assert_eq!(result.client, Client::Codex);
-    assert_eq!(result.restored_files, 3);
+    assert_eq!(result.restored_files, 2);
     assert_eq!(read(&paths, FileKind::CodexConfig), config);
     assert_eq!(read(&paths, FileKind::CodexAuth), auth);
     assert!(!paths.target(FileKind::CodexCatalog).exists());
@@ -88,10 +89,8 @@ fn changing_stations_keeps_initial_config_and_login_and_adds_new_files_to_baseli
         files.iter().find(|f| f["kind"] == "CodexConfig").unwrap()["contents"],
         latest_config
     );
-    assert_eq!(
-        files.iter().find(|f| f["kind"] == "CodexAuth").unwrap()["contents"],
-        latest_auth
-    );
+    assert!(files.iter().all(|file| file["kind"] != "CodexAuth"));
+    assert_eq!(read(&paths, FileKind::CodexAuth), latest_auth);
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;

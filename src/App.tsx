@@ -40,6 +40,7 @@ import {
   type DiscoveryResult,
   type ImportResult,
   type Status,
+  type SetupOptions,
 } from "./native";
 import {
   DEFAULT_STATION,
@@ -58,6 +59,8 @@ import {
 import StationEditor from "./StationEditor";
 import RestorePanel from "./RestorePanel";
 import HandoffPanel from "./HandoffPanel";
+import SetupOptionsPanel from "./SetupOptionsPanel";
+import { DEFAULT_OPTIONS, selectedOptions } from "./setup-options";
 import { handoffSelection, shouldAutoAccept } from "./handoff";
 import { version } from "../package.json";
 
@@ -150,6 +153,7 @@ export default function App() {
   const [visible, setVisible] = useState(false);
   const [discovery, setDiscovery] = useState<DiscoveryResult | null>(null);
   const [selection, setSelection] = useState<ModelSelection>(EMPTY_SELECTION);
+  const [options, setOptions] = useState<SetupOptions>(DEFAULT_OPTIONS);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState<"discover" | "import" | "restore" | "handoff" | null>(
@@ -171,6 +175,7 @@ export default function App() {
     stations.find((item) => item.id === preferences.selected) ??
     DEFAULT_STATION;
   const selectedClient = clients.find((item) => item.id === client)!;
+  const effectiveOptions = selectedOptions(client, selection.ids, options);
   const clientStatus = status?.clients.find((item) => item.client === client);
   const hasRestorePoint = status?.clients.some((item) => item.hasBackup) ?? false;
   const disabled = busy !== null;
@@ -215,6 +220,7 @@ export default function App() {
     const fetched = await discoverHandoffModels(setup.requestId, target);
     setDiscovery(fetched);
     setSelection(handoffSelection(target, fetched.models));
+    setOptions(DEFAULT_OPTIONS);
     setClient(target); setStep(3); setFurthest(3); setQuery(""); setError("");
   }
   async function receivePlatformImport(pending: PendingHandoff) {
@@ -223,6 +229,7 @@ export default function App() {
     try {
       const setup = await acceptHandoff(pending.requestId);
       setApiKey(""); setVisible(false); setDiscovery(null); setSelection(EMPTY_SELECTION);
+      setOptions(DEFAULT_OPTIONS);
       setResult(null); setEditing(undefined); setRestored(false);
       setHandoffSetup(setup); setPendingImport(null); setGatewayReview(setup.gatewayNeedsReview);
       const target: Client = setup.suggestedClient === "codex" && setup.allowedClients.includes("codex-desktop") ? "codex-desktop" : setup.suggestedClient;
@@ -275,6 +282,7 @@ export default function App() {
   function clearDiscovery() {
     setDiscovery(null);
     setSelection(EMPTY_SELECTION);
+    setOptions(DEFAULT_OPTIONS);
     setQuery("");
     setError("");
     setResult(null);
@@ -340,9 +348,11 @@ export default function App() {
     if (handoffSetup) {
       if (!handoffSetup.allowedClients.includes(next)) { setError("Choose a client compatible with this imported API key."); return; }
       setClient(next); setDiscovery(null); setSelection(EMPTY_SELECTION);
+      setOptions(DEFAULT_OPTIONS);
       void fetchPlatformModels(next); return;
     }
     setClient(next);
+    setOptions(DEFAULT_OPTIONS);
     clearDiscovery();
     setApiKey("");
     setVisible(false);
@@ -386,6 +396,7 @@ export default function App() {
         discoveryId: discovery.discoveryId,
         selectedModels: selection.ids,
         defaultModel: selection.defaultId,
+        options: effectiveOptions,
       });
       setResult(imported);
       setHandoffSetup(null); setHandoffError("");
@@ -1074,6 +1085,15 @@ export default function App() {
                     The model list comes from this key; requests require the gateway to support the{" "}
                     {family === "codex" ? "Responses" : "Messages"} API.
                   </p>
+                  {selection.ids.length > 0 && (
+                    <SetupOptionsPanel
+                      client={client}
+                      models={selection.ids}
+                      value={effectiveOptions}
+                      change={setOptions}
+                      disabled={disabled}
+                    />
+                  )}
                 </div>
               )}
             </div>

@@ -1,4 +1,5 @@
 pub mod adapter;
+mod claude_config;
 mod codex_context;
 pub mod compatibility;
 pub mod desktop_config;
@@ -9,6 +10,7 @@ mod patch;
 #[allow(dead_code)]
 mod provider_fields;
 pub mod restore;
+pub mod setup_options;
 pub mod storage;
 pub mod vscode_config;
 
@@ -70,14 +72,27 @@ mod desktop {
             clients: models::Client::ALL
                 .into_iter()
                 .map(|client| {
-                    let path = paths.target(storage::FileKind::primary(client));
+                    let (path, compatibility) = match paths.for_client(client) {
+                        Ok(client_paths) => (
+                            client_paths.target(storage::FileKind::primary(client)),
+                            compatibility::inspect(&client_paths, client),
+                        ),
+                        Err(error) => {
+                            let mut compatibility = compatibility::inspect(&paths, client);
+                            compatibility.blocked = Some(error);
+                            (
+                                paths.target(storage::FileKind::primary(client)),
+                                compatibility,
+                            )
+                        }
+                    };
                     ClientStatus {
                         client,
                         has_backup: paths.has_backup(client),
                         pending: paths.pending(client),
                         config_exists: path.is_file(),
                         config_path: path.to_string_lossy().into_owned(),
-                        compatibility: compatibility::inspect(&paths, client),
+                        compatibility,
                     }
                 })
                 .collect(),

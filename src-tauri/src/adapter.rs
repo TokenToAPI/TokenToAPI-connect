@@ -27,6 +27,9 @@ pub struct ImportResult {
 }
 
 pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, String> {
+    input.options.validate(&input)?;
+    let resolved = paths.for_client(input.client)?;
+    let paths = &resolved;
     let _lock = paths.lock()?;
     let compatibility = crate::compatibility::inspect(paths, input.client);
     if let Some(blocked) = compatibility.blocked {
@@ -47,7 +50,13 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
                     },
                     ClearScope {
                         parent: KeyPath::new(&["env"]),
-                        is_floor: floor::claude_floor_env,
+                        is_floor: if input.options.artifact_mode
+                            == crate::setup_options::ArtifactMode::Preserve
+                        {
+                            floor::claude_floor_env_preserving_artifact
+                        } else {
+                            floor::claude_floor_env
+                        },
                     },
                 ],
                 ..JsonPatch::default()
@@ -69,17 +78,10 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
                 KeyPath::new(&["availableModels"]),
                 json!(input.selected_models),
             ));
-            for (key, val) in [
-                ("ANTHROPIC_BASE_URL", input.root.as_str()),
-                ("ANTHROPIC_AUTH_TOKEN", input.api_key.as_str()),
-                ("ANTHROPIC_DEFAULT_HAIKU_MODEL", input.model.as_str()),
-                ("ANTHROPIC_DEFAULT_SONNET_MODEL", input.model.as_str()),
-                ("ANTHROPIC_DEFAULT_OPUS_MODEL", input.model.as_str()),
-                ("ANTHROPIC_DEFAULT_FABLE_MODEL", input.model.as_str()),
-                ("CLAUDE_CODE_SUBAGENT_MODEL", input.model.as_str()),
-                ("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1"),
-            ] {
-                patch.set.push((KeyPath::new(&["env", key]), json!(val)));
+            for (key, val) in crate::claude_config::environment(&input) {
+                patch
+                    .set
+                    .push((KeyPath::new(&["env", key.as_str()]), json!(val)));
             }
             let after = String::from_utf8(
                 patch
@@ -116,9 +118,13 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
             provider.insert("name", value("TokenToAPI Connect"));
             provider.insert("base_url", value(format!("{}/v1", input.root)));
             provider.insert("wire_api", value("responses"));
-            provider.insert("requires_openai_auth", value(true));
+            provider.insert("experimental_bearer_token", value(&input.api_key));
+            provider.insert("requires_openai_auth", value(false));
             provider.insert("supports_websockets", value(false));
             let mut patch = TomlPatch::default();
+            for id in ["openai", "ollama", "lmstudio"] {
+                patch.remove.push(KeyPath::new(&["model_providers", id]));
+            }
             for segments in floor::CODEX_FLOOR_NESTED {
                 patch.remove.push(KeyPath::new(segments));
             }
@@ -137,8 +143,7 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
             for (key, val) in [
                 ("model", input.model.as_str()),
                 ("model_provider", "tokentoapi-connect"),
-                ("cli_auth_credentials_store", "file"),
-                ("web_search", "disabled"),
+                ("web_search", input.options.web_search_value(&parsed)?),
             ] {
                 patch.set.push((KeyPath::new(&[key]), value(val)));
             }
@@ -216,21 +221,6 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
                     .map_err(|e| e.to_string())?,
             )
             .map_err(|_| "Configuration encoding error.")?;
-            // Match CC Switch's API-key credential mode; saved login is included in the restore snapshot.
-            let auth_path = paths.target(FileKind::CodexAuth);
-            let auth_before = storage::read_optional(&auth_path)?;
-            if let Some(text) = &auth_before {
-                serde_json::from_str::<serde_json::Value>(text).map_err(|_| {
-                    "The original auth.json is not valid JSON; the import was stopped."
-                })?;
-            }
-            let auth = serde_json::to_string_pretty(&json!({"OPENAI_API_KEY":input.api_key}))
-                .map_err(|_| "Could not generate the credentials file.")?;
-            changes.push(Change {
-                kind: FileKind::CodexAuth,
-                before: auth_before,
-                after: auth,
-            });
             changes.push(Change {
                 kind,
                 before,

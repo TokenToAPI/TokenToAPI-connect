@@ -89,6 +89,46 @@ impl Paths {
         paths.sandbox = false;
         Ok(paths)
     }
+    pub fn for_client(&self, client: Client) -> Result<Self, String> {
+        let mut paths = self.clone();
+        #[cfg(windows)]
+        if client == Client::ClaudeDesktop {
+            let data = self
+                .claude_desktop
+                .parent()
+                .ok_or("The Claude Desktop data directory is invalid.")?;
+            paths.claude_desktop = claude_desktop_directory(data, false)?;
+            paths.claude_threep = claude_desktop_directory(data, true)?;
+        }
+        if client == Client::ClaudeVscode {
+            let doc = crate::vscode_config::read(self)?;
+            if let Some(vars) = doc.get("claudeCode.environmentVariables") {
+                let vars = vars.as_array().ok_or(
+                    "claudeCode.environmentVariables must be an array; the configuration was not modified.",
+                )?;
+                let values: Vec<_> = vars
+                    .iter()
+                    .filter(|value| value["name"] == "CLAUDE_CONFIG_DIR")
+                    .collect();
+                if values.len() > 1 {
+                    return Err("VS Code has duplicate CLAUDE_CONFIG_DIR values; merge them before importing.".into());
+                }
+                if let Some(value) = values.first() {
+                    let value = value["value"].as_str().ok_or(
+                        "VS Code CLAUDE_CONFIG_DIR must be an absolute path; the configuration was not modified.",
+                    )?;
+                    if !value.is_empty() {
+                        let path = PathBuf::from(value);
+                        if !path.is_absolute() {
+                            return Err("VS Code CLAUDE_CONFIG_DIR must be an absolute path; ~ and relative paths are not supported.".into());
+                        }
+                        paths.claude = path;
+                    }
+                }
+            }
+        }
+        Ok(paths)
+    }
     pub fn target(&self, kind: FileKind) -> PathBuf {
         match kind {
             FileKind::ClaudeSettings => self.claude.join("settings.json"),
@@ -135,6 +175,59 @@ impl Paths {
         file.try_lock_exclusive()
             .map_err(|_| "Another import is already in progress; please try again later.")?;
         Ok(file)
+    }
+}
+
+#[cfg(test)]
+mod path_tests {
+    use super::*;
+
+    #[test]
+    fn claude_desktop_suffix_resolution_requires_one_configured_candidate() {
+        let temp = tempfile::tempdir().unwrap();
+        let exact = temp.path().join("Claude");
+        fs::create_dir_all(&exact).unwrap();
+        assert_eq!(claude_desktop_directory(temp.path(), false).unwrap(), exact);
+        fs::remove_dir(&exact).unwrap();
+
+        let suffixed = temp.path().join("Claude-12345");
+        fs::create_dir_all(&suffixed).unwrap();
+        fs::write(suffixed.join("claude_desktop_config.json"), "{}").unwrap();
+        assert_eq!(
+            claude_desktop_directory(temp.path(), false).unwrap(),
+            suffixed
+        );
+
+        let second = temp.path().join("Claude-67890");
+        fs::create_dir_all(second.join("configLibrary")).unwrap();
+        assert!(claude_desktop_directory(temp.path(), false).is_err());
+    }
+}
+
+pub fn claude_desktop_directory(data: &Path, threep: bool) -> Result<PathBuf, String> {
+    let exact = data.join(if threep { "Claude-3p" } else { "Claude" });
+    if exact.is_dir() {
+        return Ok(exact);
+    }
+    let candidates: Vec<_> = fs::read_dir(data)
+        .into_iter()
+        .flatten()
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .filter(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("Claude") && name.contains("-3p") == threep)
+        })
+        .filter(|path| {
+            path.join("claude_desktop_config.json").is_file() || path.join("configLibrary").is_dir()
+        })
+        .collect();
+    match candidates.as_slice() {
+        [] => Ok(exact),
+        [path] => Ok(path.clone()),
+        _ => Err("Multiple Claude Desktop configuration directories were found; no directory was changed.".into()),
     }
 }
 
@@ -457,6 +550,8 @@ fn restore_record(paths: &Paths, client: Client, record: &Path) -> Result<(), St
 }
 
 pub fn restore(paths: &Paths, client: Client) -> Result<(), String> {
+    let resolved = paths.for_client(client)?;
+    let paths = &resolved;
     let client = client.backup_client();
     let _lock = paths.lock()?;
     let pending = paths.record(client, true);

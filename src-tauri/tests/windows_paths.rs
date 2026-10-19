@@ -24,6 +24,7 @@ fn unicode_home_catalog_and_original_crlf_auth_round_trip() {
             root: "https://gateway.example.test".into(),
             model: "gpt-fixture".into(),
             selected_models: vec!["gpt-fixture".into()],
+            options: Default::default(),
             catalog: Some(
                 models::build_codex_catalog(
                     &serde_json::json!({"data":[{"id":"gpt-fixture","context_window":128000}]}),

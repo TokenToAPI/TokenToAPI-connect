@@ -4,16 +4,16 @@
 
 A simple local API configurator. Choose a gateway, pick Claude or Codex, enter your API Key, select the models you need, and import.
 
-**v0.1.4** · [Downloads](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.4) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
+**v0.1.5** · [Downloads](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.5) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
 
 ## Downloads
 
 | Platform | Download | How to open |
 | --- | --- | --- |
-| macOS 12+ · Apple Silicon (arm64) | [macOS Apple Silicon ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.4/TokenToAPI-Connect-0.1.4-macOS-arm64.zip) | Extract, then open `TokenToAPI Connect.app`; you can also move it to Applications |
-| Windows 10/11 · x64 | [Windows x64 portable ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.4/TokenToAPI-Connect-0.1.4-Windows-x64-portable.zip) | Extract the entire ZIP into a permanent folder, then open `TokenToAPI Connect.exe` once |
+| macOS 12+ · Apple Silicon (arm64) | [macOS Apple Silicon ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.5/TokenToAPI-Connect-0.1.5-macOS-arm64.zip) | Extract, then open `TokenToAPI Connect.app`; you can also move it to Applications |
+| Windows 10/11 · x64 | [Windows x64 portable ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.5/TokenToAPI-Connect-0.1.5-Windows-x64-portable.zip) | Extract the entire ZIP into a permanent folder, then open `TokenToAPI Connect.exe` once |
 
-Downloads come directly from [GitHub Releases](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.4). Verify them with the release's [SHA-256 checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.4/SHA256SUMS.txt). See [verification notes](VERIFICATION.md) for test coverage.
+Downloads come directly from [GitHub Releases](https://github.com/TokenToAPI/TokenToAPI-connect/releases/tag/v0.1.5). Verify them with the release's [SHA-256 checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.1.5/SHA256SUMS.txt). See [verification notes](VERIFICATION.md) for test coverage.
 
 No Node.js or Rust installation is required at runtime. The macOS package is for Apple Silicon Macs and uses an ad-hoc signature; it has not yet completed Apple Developer ID signing or notarization, so macOS may require confirmation before opening it. Windows uses the system WebView2 Runtime; if it is missing, install it from the [Microsoft website](https://developer.microsoft.com/microsoft-edge/webview2/) as prompted by the app. Checksums are in the release's `SHA256SUMS.txt`. The Windows portable package does not require installation or the VC++ Redistributable, but it is not yet publisher-signed, so Windows may show an unknown-publisher or SmartScreen warning.
 
@@ -23,8 +23,8 @@ Browsers or the OS may show interception warnings such as "not a commonly downlo
 
 ### Import from the TokenToAPI platform
 
-Connect v0.1.4 includes the platform's **Import to Connect** handoff and the
-Codex context / thinking compatibility fixes. The platform handoff requires
+Connect v0.1.5 includes the platform's **Import to Connect** handoff and the
+Codex context / thinking, image-capability, and credential compatibility fixes. The platform handoff requires
 the matching platform integration; v0.1.3 and later can handle these links.
 The matching platform update is deployed. On Windows, opening the extracted app once registers the import link for your user account. If you move its folder, open the app again before importing.
 
@@ -63,7 +63,7 @@ To revert, choose **Use original config** from the gateway list. When one unchan
 
 `CLAUDE_CONFIG_DIR` and `CODEX_HOME` are respected. The Windows build configures local Windows clients; WSL, Remote SSH, and custom VS Code profiles must be configured in their own environments.
 
-The supported scope covers client versions that allow local API configuration, excluding the Claude web app, mobile clients, and cloud tasks. Claude Code 1.x does not support the new custom model menu; the Claude desktop app needs support for third-party inference mode. Organization-managed Claude providers and Codex with top-level custom profiles enabled block local import.
+The supported scope covers client versions that allow local API configuration, excluding the Claude web app, mobile clients, and cloud tasks. Claude Code needs version 2.1.242 or newer for the custom multi-model picker; older versions receive a compatibility warning. The Claude desktop app needs support for third-party inference mode. Organization-managed Claude providers and Codex with top-level custom profiles enabled block local import.
 
 The gateway must expose `/v1/models` with Bearer authentication and support the Messages or Responses protocol of the target client. **Fetching the model list and writing configuration does not equal a verified conversation and tool calls.** Confirm in the target client after importing. See [VERIFICATION.md](VERIFICATION.md) for the test scope.
 
@@ -80,12 +80,17 @@ Codex's external model catalog replaces the built-in one. When the gateway provi
 
 ### Codex context and thinking compatibility
 
-Version 0.1.4 fixes the old generated-catalog fallback that could make Codex
-report only a short context window after import. Known Codex models use their
-native context and thinking profiles, including numeric effort values and the
+Version 0.1.4 fixed the legacy generated-catalog fallback that could make Codex
+report only a short context window after import. Version 0.1.5 also keeps that
+repair while adding provider-scoped authentication and explicit search settings.
+Known Codex models use their native context and thinking profiles, including numeric effort values and the
 GPT-6.1 Sol / GPT-6 Astra Ultra mode. Valid local values for
 `model_context_window`, `model_auto_compact_token_limit`, and supported thinking
-preferences are retained when the gateway does not provide a replacement.
+preferences are retained when the gateway does not provide a replacement. The
+Codex API Key is stored with the TokenToAPI provider instead of overwriting
+official login state; existing or explicitly chosen web search behavior is
+preserved. Full model-directory metadata is used to retain image support,
+while dedicated media and embedding models are kept out of chat selection.
 
 After upgrading, fetch the models again and import them. Fully quit Codex,
 reopen it, and create a new local session so it reloads the model catalog and
@@ -185,7 +190,7 @@ pnpm tauri build --bundles deb
 pnpm tauri build --bundles rpm
 ```
 
-Linux GUI packages should be built on Linux rather than cross-compiled from macOS or Windows. The official `v0.1.4` release provides macOS arm64 and Windows x64 packages; Linux users should build from source until a Linux release artifact is published.
+Linux GUI packages should be built on Linux rather than cross-compiled from macOS or Windows. The official `v0.1.5` release provides macOS arm64 and Windows x64 packages; Linux users should build from source until a Linux release artifact is published.
 
 ### Packaging scripts
 
@@ -204,7 +209,7 @@ Artifacts go to `release/`. The Windows script skips the installer and checks th
 
 `.cargo/config.toml` controls fully static CRT linking; `tauri.windows.conf.json` disables Tauri's own mixed-CRT override to avoid conflicts.
 
-Run release checks locally by default. Build and validate Windows packages on a native Windows machine; cross-compilation on a Mac does not verify Windows runtime behavior. The v0.1.4 Windows package is validated on a Windows runner. GitHub Actions is manual-only. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
+Run release checks locally by default. Build and validate Windows packages on a native Windows machine; cross-compilation on a Mac does not verify Windows runtime behavior. The v0.1.5 Windows package was cross-compiled and statically checked on macOS; it has not received native Windows runtime validation. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
 
 ## Isolated testing
 

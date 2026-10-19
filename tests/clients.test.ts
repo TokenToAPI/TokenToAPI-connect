@@ -12,3 +12,13 @@ test("Claude Desktop cannot import an incompatible alias through bulk selection"
   assert.equal(modelSelectable("claude", "custom-alias"), true);
   assert.equal(modelSelectable("codex-desktop", "custom-alias"), true);
 });
+
+test("dedicated media and embedding models are not selectable as chat models", () => {
+  for (const id of ["gpt-image-1", "dall-e-3", "whisper-1", "tts-1", "text-embedding-3-large", "sora-2"]) {
+    for (const client of clients.map((item) => item.id)) {
+      assert.equal(modelSelectable(client, id), false, `${client} must reject ${id}`);
+    }
+  }
+  assert.equal(modelSelectable("codex", "gpt-4o"), true);
+  assert.equal(modelSelectable("claude", "claude-3-7-sonnet"), true);
+});

@@ -2,7 +2,9 @@ use std::fs;
 use tokentoapi_connect_lib::{
     adapter,
     models::{self, Client, ValidatedInput},
-    storage::{self, FileKind, Paths},
+    restore,
+    setup_options::{ArtifactMode, WebSearchMode},
+    storage::{self, Change, FileKind, Paths},
 };
 
 fn input(client: Client) -> ValidatedInput {
@@ -21,6 +23,7 @@ fn input(client: Client) -> ValidatedInput {
         }
         .into()],
         catalog: None,
+        options: Default::default(),
     }
 }
 
@@ -28,7 +31,7 @@ fn input(client: Client) -> ValidatedInput {
 fn codex_merge_keeps_comments_mcp_and_permissions_and_restores_login_exactly() {
     let home = tempfile::tempdir().unwrap();
     let paths = Paths::for_home(home.path());
-    let original="# My comment\nmodel = \"old\" # model note\nmodel_reasoning_effort = \"medium\"\nplan_mode_reasoning_effort = \"xhigh\"\napproval_policy = \"on-request\"\n\n[mcp_servers.example]\ncommand = \"my-server\"\n\n[model_providers.original]\nname = \"Original\"\n";
+    let original="# My comment\nmodel = \"old\" # model note\nmodel_reasoning_effort = \"medium\"\nplan_mode_reasoning_effort = \"xhigh\"\napproval_policy = \"on-request\"\ncli_auth_credentials_store = \"keyring\"\nweb_search = \"live\"\n\n[mcp_servers.example]\ncommand = \"my-server\"\n\n[model_providers.original]\nname = \"Original\"\n";
     let auth = "{\n  \"tokens\": {\"refresh_token\": \"fake-test-oauth\"}\n}\n";
     storage::atomic_write(&paths.target(FileKind::CodexConfig), original.as_bytes()).unwrap();
     storage::atomic_write(&paths.target(FileKind::CodexAuth), auth.as_bytes()).unwrap();
@@ -64,6 +67,20 @@ fn codex_merge_keeps_comments_mcp_and_permissions_and_restores_login_exactly() {
     assert_eq!(
         doc["model_providers"]["tokentoapi-connect"]["base_url"].as_str(),
         Some("https://api.example.test/v1")
+    );
+    assert_eq!(
+        doc["model_providers"]["tokentoapi-connect"]["experimental_bearer_token"].as_str(),
+        Some("sk-fake-test-only")
+    );
+    assert_eq!(
+        doc["model_providers"]["tokentoapi-connect"]["requires_openai_auth"].as_bool(),
+        Some(false)
+    );
+    assert_eq!(doc["web_search"].as_str(), Some("live"));
+    assert_eq!(doc["cli_auth_credentials_store"].as_str(), Some("keyring"));
+    assert_eq!(
+        fs::read_to_string(paths.target(FileKind::CodexAuth)).unwrap(),
+        auth
     );
     let encoded = serde_json::to_string(&result).unwrap();
     assert!(!encoded.contains("sk-fake-test-only"));
@@ -113,15 +130,15 @@ fn claude_merge_preserves_hooks_permissions_unrelated_env_and_bom() {
     assert_eq!(doc["hooks"]["Stop"], serde_json::json!([]));
     assert_eq!(doc["permissions"]["allow"], serde_json::json!(["Read"]));
     assert_eq!(doc["env"]["CUSTOM_VAR"], "keep");
-    assert!(doc["env"].get("ANTHROPIC_API_KEY").is_none());
-    assert!(doc["env"].get("CLAUDE_CODE_USE_BEDROCK").is_none());
+    assert_eq!(doc["env"]["ANTHROPIC_API_KEY"], "");
+    assert_eq!(doc["env"]["CLAUDE_CODE_USE_BEDROCK"], "");
     for key in [
         "CLAUDE_CODE_DISABLE_THINKING",
         "DISABLE_INTERLEAVED_THINKING",
         "CLAUDE_CODE_ALWAYS_ENABLE_EFFORT",
         "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
     ] {
-        assert!(doc["env"].get(key).is_none(), "{key} was retained");
+        assert_eq!(doc["env"][key], "", "{key} was not neutralized");
     }
     storage::restore(&paths, Client::Claude).unwrap();
     assert_eq!(
@@ -162,12 +179,15 @@ fn restore_refuses_to_destroy_later_user_edits_or_a_different_config_directory()
     let mut text = fs::read_to_string(&config).unwrap();
     text.push_str("\n# My later edit\n");
     storage::atomic_write(&config, text.as_bytes()).unwrap();
-    let auth = fs::read(paths.target(FileKind::CodexAuth)).unwrap();
+    let auth = storage::read_optional(&paths.target(FileKind::CodexAuth)).unwrap();
     assert!(storage::restore(&paths, Client::Codex)
         .unwrap_err()
         .contains("modified again"));
     assert_eq!(fs::read_to_string(&config).unwrap(), text);
-    assert_eq!(fs::read(paths.target(FileKind::CodexAuth)).unwrap(), auth);
+    assert_eq!(
+        storage::read_optional(&paths.target(FileKind::CodexAuth)).unwrap(),
+        auth
+    );
     assert!(paths.has_backup(Client::Codex));
 }
 
@@ -239,10 +259,183 @@ fn claude_picker_contains_exactly_selected_models_and_default_can_be_changed_lat
     assert_eq!(picker["replaceBuiltInOptions"], true);
     assert_eq!(picker["options"].as_array().unwrap().len(), 2);
     assert_eq!(picker["options"][1]["model"], "custom-team-model");
-    assert!(result["env"].get("ANTHROPIC_MODEL").is_none());
+    assert_eq!(result["env"]["ANTHROPIC_MODEL"], "");
     storage::restore(&paths, Client::Claude).unwrap();
     assert_eq!(
         fs::read_to_string(paths.target(FileKind::ClaudeSettings)).unwrap(),
         original
+    );
+}
+
+#[test]
+fn legacy_codex_auth_import_migrates_without_losing_the_original_restore_point() {
+    let home = tempfile::tempdir().unwrap();
+    let paths = Paths::for_home(home.path());
+    let original_config = "model = \"official\"\ncli_auth_credentials_store = \"keyring\"\n";
+    let original_auth = "{\"tokens\":{\"refresh_token\":\"original-oauth\"}}\n";
+    let legacy_auth = "{\"OPENAI_API_KEY\":\"old-connect-key\"}\n";
+    let legacy_config = "model = \"old\"\n";
+    storage::atomic_write(
+        &paths.target(FileKind::CodexConfig),
+        original_config.as_bytes(),
+    )
+    .unwrap();
+    storage::atomic_write(&paths.target(FileKind::CodexAuth), original_auth.as_bytes()).unwrap();
+    storage::commit(
+        &paths,
+        Client::Codex,
+        vec![
+            Change {
+                kind: FileKind::CodexAuth,
+                before: Some(original_auth.into()),
+                after: legacy_auth.into(),
+            },
+            Change {
+                kind: FileKind::CodexConfig,
+                before: Some(original_config.into()),
+                after: legacy_config.into(),
+            },
+        ],
+    )
+    .unwrap();
+    let mut next = input(Client::Codex);
+    next.options.web_search = WebSearchMode::Cached;
+    adapter::apply(&paths, next).unwrap();
+
+    assert_eq!(
+        fs::read_to_string(paths.target(FileKind::CodexAuth)).unwrap(),
+        legacy_auth
+    );
+    let config = fs::read_to_string(paths.target(FileKind::CodexConfig)).unwrap();
+    let parsed = config.parse::<toml_edit::DocumentMut>().unwrap();
+    assert_eq!(parsed["web_search"].as_str(), Some("cached"));
+    assert_eq!(
+        parsed["model_providers"]["tokentoapi-connect"]["experimental_bearer_token"].as_str(),
+        Some("sk-fake-test-only")
+    );
+    storage::restore(&paths, Client::Codex).unwrap();
+    assert_eq!(
+        fs::read_to_string(paths.target(FileKind::CodexConfig)).unwrap(),
+        original_config
+    );
+    assert_eq!(
+        fs::read_to_string(paths.target(FileKind::CodexAuth)).unwrap(),
+        original_auth
+    );
+}
+
+#[test]
+fn codex_reserved_provider_names_are_removed_and_restored_byte_for_byte() {
+    let home = tempfile::tempdir().unwrap();
+    let paths = Paths::for_home(home.path());
+    let original = "[model_providers.openai]\nname = \"wrong\"\n\n[model_providers.ollama]\nname = \"local\"\n\n[model_providers.custom]\nname = \"keep\"\n";
+    storage::atomic_write(&paths.target(FileKind::CodexConfig), original.as_bytes()).unwrap();
+    adapter::apply(&paths, input(Client::Codex)).unwrap();
+    let config = fs::read_to_string(paths.target(FileKind::CodexConfig)).unwrap();
+    let parsed = config.parse::<toml_edit::DocumentMut>().unwrap();
+    assert!(parsed["model_providers"].get("openai").is_none());
+    assert!(parsed["model_providers"].get("ollama").is_none());
+    assert!(parsed["model_providers"].get("custom").is_some());
+    storage::restore(&paths, Client::Codex).unwrap();
+    assert_eq!(
+        fs::read_to_string(paths.target(FileKind::CodexConfig)).unwrap(),
+        original
+    );
+}
+
+#[test]
+fn claude_role_models_artifact_preference_and_inherited_environment_are_handled() {
+    let home = tempfile::tempdir().unwrap();
+    let paths = Paths::for_home(home.path());
+    let original = r#"{"env":{"CLAUDE_CODE_DISABLE_ARTIFACT":"1","ANTHROPIC_API_KEY":"old","CLAUDE_CODE_USE_BEDROCK":"1"}}"#;
+    storage::atomic_write(&paths.target(FileKind::ClaudeSettings), original.as_bytes()).unwrap();
+    let mut selected = input(Client::Claude);
+    selected.model = "claude-sonnet-4-6".into();
+    selected.selected_models = vec![
+        "claude-sonnet-4-6".into(),
+        "claude-haiku-4-5".into(),
+        "claude-opus-4-6".into(),
+    ];
+    adapter::apply(&paths, selected).unwrap();
+    let text = fs::read_to_string(paths.target(FileKind::ClaudeSettings)).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(
+        parsed["env"]["ANTHROPIC_DEFAULT_HAIKU_MODEL"],
+        "claude-haiku-4-5"
+    );
+    assert_eq!(
+        parsed["env"]["ANTHROPIC_DEFAULT_OPUS_MODEL"],
+        "claude-opus-4-6"
+    );
+    assert_eq!(
+        parsed["env"]["ANTHROPIC_DEFAULT_SONNET_MODEL"],
+        "claude-sonnet-4-6"
+    );
+    assert_eq!(parsed["env"]["CLAUDE_CODE_DISABLE_ARTIFACT"], "1");
+    assert_eq!(parsed["env"]["ANTHROPIC_API_KEY"], "");
+    assert_eq!(parsed["env"]["CLAUDE_CODE_USE_BEDROCK"], "");
+    assert_eq!(parsed["env"]["CLAUDE_CODE_AUTO_MODE_SERVER"], "0");
+    let mut enabled = input(Client::Claude);
+    enabled.model = "claude-sonnet-4-6".into();
+    enabled.selected_models = vec![
+        "claude-sonnet-4-6".into(),
+        "claude-haiku-4-5".into(),
+        "claude-opus-4-6".into(),
+    ];
+    enabled.options.artifact_mode = ArtifactMode::Enabled;
+    adapter::apply(&paths, enabled).unwrap();
+    let parsed: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(paths.target(FileKind::ClaudeSettings)).unwrap())
+            .unwrap();
+    assert_eq!(parsed["env"]["CLAUDE_CODE_DISABLE_ARTIFACT"], "0");
+    storage::restore(&paths, Client::Claude).unwrap();
+    assert_eq!(
+        fs::read_to_string(paths.target(FileKind::ClaudeSettings)).unwrap(),
+        original
+    );
+}
+
+#[test]
+fn vscode_config_directory_controls_import_preview_and_restore_target() {
+    let home = tempfile::tempdir().unwrap();
+    let paths = Paths::for_home(home.path());
+    let custom = home.path().join("claude-special");
+    let original_settings = format!(
+        r#"{{"claudeCode.environmentVariables":[{{"name":"CLAUDE_CONFIG_DIR","value":"{}"}}]}}"#,
+        custom.display()
+    );
+    storage::atomic_write(
+        &paths.target(FileKind::ClaudeVscode),
+        original_settings.as_bytes(),
+    )
+    .unwrap();
+    let original_claude = r#"{"hooks":{"Stop":[]}}"#;
+    storage::atomic_write(&custom.join("settings.json"), original_claude.as_bytes()).unwrap();
+    adapter::apply(&paths, input(Client::ClaudeVscode)).unwrap();
+    assert!(custom.join("settings.json").is_file());
+    assert!(!paths.target(FileKind::ClaudeSettings).exists());
+    let point = restore::list(&paths)
+        .into_iter()
+        .find(|point| point.client == Client::ClaudeVscode)
+        .unwrap();
+    assert!(point.available);
+    assert!(point
+        .files
+        .iter()
+        .any(|file| file.path == custom.join("settings.json").to_string_lossy()));
+    restore::apply(
+        &paths,
+        Client::ClaudeVscode,
+        point.review_id.as_deref().unwrap(),
+        false,
+    )
+    .unwrap();
+    assert_eq!(
+        fs::read_to_string(custom.join("settings.json")).unwrap(),
+        original_claude
+    );
+    assert_eq!(
+        fs::read_to_string(paths.target(FileKind::ClaudeVscode)).unwrap(),
+        original_settings
     );
 }

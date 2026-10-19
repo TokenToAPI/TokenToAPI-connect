@@ -1,5 +1,6 @@
 """Verify the production Codex importer against a real app-server and loopback gateway."""
 import argparse
+import base64
 import gzip
 import hashlib
 import json
@@ -20,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.162.0"
 MODEL = "gpt-6.1-sol"
 FAKE_KEY = "sk-tokentoapi-fixture-only"
+IMAGE_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4z8DAAMIM/4EAAB/uBfsL2WiLAAAAAElFTkSuQmCC"
 
 
 def download_codex(directory):
@@ -66,10 +68,17 @@ class Gateway(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        if self.path != "/v1/models" or self.headers.get("Authorization") != "Bearer " + FAKE_KEY:
+        if self.headers.get("Authorization") != "Bearer " + FAKE_KEY:
             self.send_error(404)
             return
-        body = json.dumps(self.server.payload).encode()
+        self.server.model_requests.append(self.path)
+        if self.path == "/v1/models?client_version=0.162.0":
+            body = json.dumps(self.server.manifest_payload).encode()
+        elif self.path == "/v1/models":
+            body = json.dumps(self.server.plain_payload).encode()
+        else:
+            self.send_error(404)
+            return
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
@@ -191,11 +200,13 @@ class Codex:
         self.last_start = reply
         return reply["thread"]["id"]
 
-    def turn(self, thread, model, effort):
+    def turn(self, thread, model, effort=None, image=None):
+        input_items = [{"type": "text", "text": "CTX_FIXTURE_: Reply OK without tools."}]
+        if image:
+            input_items.append(image)
         self.rpc(
             "turn/start",
-            {"threadId": thread, "model": model, "effort": effort,
-             "input": [{"type": "text", "text": "CTX_FIXTURE_: Reply OK without tools."}]},
+            {"threadId": thread, "model": model, "effort": effort, "input": input_items},
         )
         completed = self.receive(
             lambda message: message.get("method") == "turn/completed"
@@ -258,7 +269,10 @@ def run_case(
     legacy=False,
     repair=False,
     runtime=False,
+    vision=False,
     model=MODEL,
+    selected_models=None,
+    plain_payload=None,
     numeric=False,
 ):
     home = temporary / (label + " Unicode User")
@@ -281,12 +295,15 @@ def run_case(
         "home": str(home),
         "root": endpoint,
         "client": "codex-desktop",
-        "selectedModels": [model],
+        "selectedModels": selected_models or [model],
         "defaultModel": model,
     }
     request_path = output / (label + ".json")
     catalog_path = codex_home / "tokentoapi-models.json"
-    gateway.payload, gateway.requests, gateway.usage = payload, [], 100
+    gateway.manifest_payload = payload
+    gateway.plain_payload = plain_payload if plain_payload is not None else payload
+    gateway.requests, gateway.usage = [], 100
+    gateway.model_requests = []
     run_fixture(fixture, request_path, specification)
 
     if legacy:
@@ -300,7 +317,7 @@ def run_case(
         edited["models"][0]["context_window"] = 500000
         edited["models"][0]["auto_compact_token_limit"] = 440000
         catalog_path.write_text(json.dumps(edited), encoding="utf-8")
-        gateway.payload = {"data": [{"id": model, "effective_context_window_percent": 90}]}
+        gateway.manifest_payload = {"data": [{"id": model, "effective_context_window_percent": 90}]}
         run_fixture(fixture, request_path, specification)
 
     assert not run_fixture(fixture, request_path, specification)["changed"], "reimport was not stable"
@@ -353,6 +370,24 @@ def run_case(
                 ]
                 assert len(compactions) == 1, f"expected one compaction event, found {len(compactions)}"
                 case.update(reported_usage=451000, compaction_events=len(compactions))
+            if vision:
+                models_by_id = {row["id"]: row for row in catalog["models"]}
+                assert models_by_id["gpt-5.6-sol"]["input_modalities"] == ["text", "image"]
+                assert models_by_id["text-only-alias"]["input_modalities"] == ["text"]
+                assert all("?client_version=0.162.0" in request for request in gateway.model_requests)
+                image_path = home / "image fixture.png"
+                image_path.write_bytes(base64.b64decode(IMAGE_URL.split(",", 1)[1]))
+                for image in [
+                    {"type": "image", "url": IMAGE_URL},
+                    {"type": "localImage", "path": str(image_path)},
+                ]:
+                    thread = client.start(home, model)
+                    before = len(gateway.requests)
+                    client.turn(thread, model, image=image)
+                    sent = gateway.requests[before:]
+                    assert len(sent) == 1 and "input_image" in json.dumps(sent[0].get("input", [])), sent
+                    assert IMAGE_URL in json.dumps(sent[0]["input"]), sent
+                case["image_attachment_types_sent"] = ["image", "localImage"]
         finally:
             client.close()
             (output / (label + "-events.json")).write_text(
@@ -397,6 +432,7 @@ def main():
         report["codex_version"] = subprocess.check_output([str(binary), "--version"], text=True).strip()
         gateway = ThreadingHTTPServer(("127.0.0.1", 0), Gateway)
         gateway.requests, gateway.usage = [], 100
+        gateway.model_requests = []
         threading.Thread(target=gateway.serve_forever, daemon=True).start()
         endpoint = "http://127.0.0.1:" + str(gateway.server_port)
         known = {"data": [{"id": MODEL}]}
@@ -423,6 +459,16 @@ def main():
             )
             report["cases"].append(
                 run_case("partial-gateway-repair", binary, fixture, temporary, args.output, gateway, endpoint, known, repair=True)
+            )
+            vision = {"models": [
+                {"slug": "gpt-5.6-sol", "input_modalities": ["text", "image"], "context_window": 272000},
+                {"slug": "text-only-alias", "input_modalities": ["text"], "context_window": 65536},
+            ]}
+            report["cases"].append(
+                run_case("vision-image-input", binary, fixture, temporary, args.output, gateway, endpoint,
+                         vision, model="gpt-5.6-sol", vision=True,
+                         selected_models=["gpt-5.6-sol", "text-only-alias"],
+                         plain_payload={"data": [{"id": "gpt-5.6-sol"}, {"id": "text-only-alias"}]})
             )
             report["passed"] = True
         finally:

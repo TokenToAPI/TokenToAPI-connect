@@ -57,6 +57,7 @@ async fn main() -> Result<(), String> {
         discovery_id: session.response().discovery_id,
         selected_models: fixture.selected_models,
         default_model: fixture.default_model,
+        options: Default::default(),
     })?;
     let result = adapter::apply(&paths, input)?;
     println!("{}", serde_json::to_string(&result).unwrap());

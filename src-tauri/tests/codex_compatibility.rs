@@ -19,6 +19,7 @@ fn input(id: &str, metadata: Value, root: &str) -> ValidatedInput {
             models::build_codex_catalog(&json!({"data":[row]}), &selected_models).unwrap(),
         ),
         selected_models,
+        options: Default::default(),
     }
 }
 

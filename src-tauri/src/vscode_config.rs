@@ -22,15 +22,8 @@ fn cst(value: Value) -> CstInputValue {
     }
 }
 
-pub fn change(paths: &Paths, input: &ValidatedInput) -> Result<Change, String> {
-    let kind = FileKind::ClaudeVscode;
-    let before = storage::read_optional(&paths.target(kind))?;
-    let text = before
-        .as_deref()
-        .filter(|s| !s.trim().is_empty())
-        .unwrap_or("{}");
-    // VS Code supports JSON + comments/trailing commas, not JSON5.
-    let options = ParseOptions {
+fn options() -> ParseOptions {
+    ParseOptions {
         allow_comments: true,
         allow_trailing_commas: true,
         allow_loose_object_property_names: false,
@@ -41,7 +34,38 @@ pub fn change(paths: &Paths, input: &ValidatedInput) -> Result<Change, String> {
         allow_bare_decimal_point_numbers: false,
         allow_non_finite_numbers: false,
         allow_extended_string_escapes: false,
-    };
+    }
+}
+
+pub fn read(paths: &Paths) -> Result<Value, String> {
+    let text = storage::read_optional(&paths.target(FileKind::ClaudeVscode))?;
+    let text = text
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("{}");
+    let doc: Value =
+        jsonc_parser::parse_to_serde_value(text.trim_start_matches('\u{feff}'), &options())
+            .map_err(|_| {
+                "The VS Code user settings are not valid JSONC; the configuration was not modified."
+            })?;
+    if !doc.is_object() {
+        return Err(
+            "The VS Code user settings must be an object; the configuration was not modified."
+                .into(),
+        );
+    }
+    Ok(doc)
+}
+
+pub fn change(paths: &Paths, input: &ValidatedInput) -> Result<Change, String> {
+    let kind = FileKind::ClaudeVscode;
+    let before = storage::read_optional(&paths.target(kind))?;
+    let text = before
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("{}");
+    let options = options();
+    let key = "claudeCode.environmentVariables";
     let doc: Value = jsonc_parser::parse_to_serde_value(text, &options).map_err(|_| {
         "The VS Code user settings are not valid JSONC; the configuration was not modified."
     })?;
@@ -51,7 +75,6 @@ pub fn change(paths: &Paths, input: &ValidatedInput) -> Result<Change, String> {
                 .into(),
         );
     }
-    let key = "claudeCode.environmentVariables";
     let mut vars = match doc.get(key) {
         None => vec![],
         Some(Value::Array(values)) => values.clone(),
@@ -66,12 +89,15 @@ pub fn change(paths: &Paths, input: &ValidatedInput) -> Result<Change, String> {
     }) {
         return Err("The Claude VS Code environment variables have an invalid format; the configuration was not modified.".into());
     }
-    vars.retain(|v| !provider_fields::claude_floor_env(v["name"].as_str().unwrap()));
-    for (name, value) in [
-        ("ANTHROPIC_BASE_URL", input.root.as_str()),
-        ("ANTHROPIC_AUTH_TOKEN", input.api_key.as_str()),
-        ("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1"),
-    ] {
+    vars.retain(|v| {
+        let name = v["name"].as_str().unwrap();
+        if input.options.artifact_mode == crate::setup_options::ArtifactMode::Preserve {
+            !provider_fields::claude_floor_env_preserving_artifact(name)
+        } else {
+            !provider_fields::claude_floor_env(name)
+        }
+    });
+    for (name, value) in crate::claude_config::environment(input) {
         vars.retain(|v| v["name"] != name);
         vars.push(json!({"name": name, "value": value}));
     }
@@ -95,6 +121,20 @@ pub fn change(paths: &Paths, input: &ValidatedInput) -> Result<Change, String> {
         property.set_value(cst(json!(vars)));
     } else {
         obj.append(key, cst(json!(vars)));
+    }
+    if obj
+        .properties()
+        .iter()
+        .filter(|prop| prop.decoded_name().as_deref() == Some("claudeCode.disableLoginPrompt"))
+        .count()
+        > 1
+    {
+        return Err("VS Code contains duplicate claudeCode.disableLoginPrompt settings; merge them before importing.".into());
+    }
+    if let Some(property) = obj.get("claudeCode.disableLoginPrompt") {
+        property.set_value(CstInputValue::Bool(true));
+    } else {
+        obj.append("claudeCode.disableLoginPrompt", CstInputValue::Bool(true));
     }
     Ok(Change {
         kind,

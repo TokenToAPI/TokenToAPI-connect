@@ -18,5 +18,6 @@ export function clientFamily(client: Client): "codex" | "claude" {
 }
 
 export function modelSelectable(client: Client, id: string): boolean {
+  if (/^(?:gpt-image(?:-|$)|dall-e(?:-|$)|whisper-|tts-|text-embedding-|sora-)/i.test(id)) return false;
   return client !== "claude-desktop" || /^(anthropic\/)?claude-(sonnet|opus|haiku|fable)-[^\[]+$/i.test(id);
 }

@@ -1,3 +1,27 @@
+# v0.1.5 verification
+
+Reviewed the upstream SuperGPT Connect v0.1.6 compatibility release on 2026-10-19. The matching issues, fixes, and deliberately unsupported MCP Tool Search inference are documented in [COMPATIBILITY.md](COMPATIBILITY.md).
+
+## Automated checks
+
+- 87 Rust unit/integration tests passed on macOS arm64, including configuration, model discovery, backup/restore, Claude setup options, Codex catalog compatibility, and Windows path-resolution fixtures.
+- TypeScript check, 15 frontend tests, 3 lifecycle tests, and the production web build passed on Node.js 26.11.0.
+- Real Codex 0.162.0 passed five isolated macOS scenarios against a loopback-only fake gateway: provider credentials and restore, numeric thinking levels, legacy 32K catalog repair, partial gateway metadata, and URL/local image attachments.
+- No real provider inference calls were made. The Claude Code binary installed on this Mac is 2.1.88, below the 2.1.242 custom-model-picker floor; Claude behavior is configuration-tested, not claimed as a live runtime validation.
+
+## Package validation
+
+- macOS arm64 package build passed with app version `0.1.5`, macOS 12.0 minimum system version, registered `tokentoapi-connect` protocol, and strict signature verification after extracting the release ZIP.
+- Windows x64 portable package cross-compiled on macOS with `cargo-xwin`; PE architecture, GUI subsystem, non-elevated execution, static runtime dependencies, and ZIP integrity passed. This is not a native Windows launch or runtime test.
+- Neither package is publisher-signed; the Mac app is ad-hoc signed and not notarized.
+
+```text
+02c5c9c0802576321a9901a1a32590d479b771ff21c3d51433c43f29a892a6d0  TokenToAPI-Connect-0.1.5-Windows-x64-portable.zip
+efa0a80978275b62bb3c5f0c86b8bde2eba9c96349260773219a01e3db04773a  TokenToAPI-Connect-0.1.5-macOS-arm64.zip
+```
+
+No GitHub workflow is part of this release process.
+
 # v0.1.4 verification
 
 Release validation completed on 2026-10-16.

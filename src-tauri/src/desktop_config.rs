@@ -11,7 +11,11 @@ use serde_json::{json, Value};
 pub const PROFILE_ID: &str = "761c488f-5a98-4c98-bac9-8b667c5be40a";
 
 fn object(text: Option<&str>) -> Result<Value, String> {
-    let value: Value = serde_json::from_str(text.unwrap_or("{}")).map_err(|_| {
+    let text = text
+        .filter(|text| !text.trim_start_matches('\u{feff}').trim().is_empty())
+        .unwrap_or("{}")
+        .trim_start_matches('\u{feff}');
+    let value: Value = serde_json::from_str(text).map_err(|_| {
         "The Claude Desktop configuration is not valid JSON; the configuration was not modified."
     })?;
     if !value.is_object() {
@@ -29,12 +33,26 @@ fn patch(paths: &Paths, kind: FileKind, fields: Value) -> Result<Change, String>
         .iter()
         .map(|(key, value)| (KeyPath::new(&[key]), value.clone()))
         .collect();
-    let bytes = JsonPatch {
+    let mut patch = JsonPatch {
         set,
         ..JsonPatch::default()
+    };
+    if matches!(
+        kind,
+        FileKind::ClaudeDesktopConfig | FileKind::ClaudeThreepConfig
+    ) {
+        for key in [
+            "inferenceProvider",
+            "inferenceGatewayBaseUrl",
+            "inferenceGatewayApiKey",
+            "inferenceGatewayAuthScheme",
+        ] {
+            patch.remove.push(KeyPath::new(&["enterpriseConfig", key]));
+        }
     }
-    .apply(&path, before.as_deref().map(str::as_bytes))
-    .map_err(|e| e.to_string())?;
+    let bytes = patch
+        .apply(&path, before.as_deref().map(str::as_bytes))
+        .map_err(|e| e.to_string())?;
     Ok(Change {
         kind,
         before,
@@ -87,6 +105,13 @@ pub fn changes(paths: &Paths, input: &ValidatedInput) -> Result<Vec<Change>, Str
         .any(|v| !v.is_object() || v.get("id").and_then(Value::as_str).is_none())
     {
         return Err("The Claude Desktop configuration registry contains unrecognizable entries; the configuration was not modified.".into());
+    }
+    let mut ids = std::collections::HashSet::new();
+    if entries
+        .iter()
+        .any(|entry| !ids.insert(entry["id"].as_str().unwrap()))
+    {
+        return Err("The Claude Desktop configuration registry contains duplicate profile IDs; merge them before importing.".into());
     }
     if let Some(entry) = entries.iter_mut().find(|v| v["id"] == PROFILE_ID) {
         entry["name"] = json!("TokenToAPI Connect");

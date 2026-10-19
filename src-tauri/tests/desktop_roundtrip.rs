@@ -15,6 +15,7 @@ fn input(client: Client) -> ValidatedInput {
         model: "claude-opus-test".into(),
         selected_models: vec!["claude-sonnet-test".into(), "claude-opus-test".into()],
         catalog: None,
+        options: Default::default(),
     }
 }
 fn read(paths: &Paths, kind: FileKind) -> Value {
@@ -83,6 +84,10 @@ fn malformed_desktop_registry_or_non_claude_model_never_half_activates() {
     for (meta, model) in [
         ("{\"entries\":42}", "claude-sonnet-test"),
         ("{\"entries\":[{}]}", "claude-sonnet-test"),
+        (
+            "{\"entries\":[{\"id\":\"work\"},{\"id\":\"work\"}]}",
+            "claude-sonnet-test",
+        ),
         ("{}", "gpt-test"),
     ] {
         let home = tempfile::tempdir().unwrap();
@@ -99,6 +104,31 @@ fn malformed_desktop_registry_or_non_claude_model_never_half_activates() {
             meta
         );
     }
+}
+
+#[test]
+fn desktop_removes_legacy_local_gateway_fields_but_keeps_policy_and_restores_exactly() {
+    let home = tempfile::tempdir().unwrap();
+    let paths = Paths::for_home(home.path());
+    let original = r#"{"enterpriseConfig":{"inferenceProvider":"old","inferenceGatewayBaseUrl":"https://old.test","inferenceGatewayApiKey":"old-key","inferenceGatewayAuthScheme":"bearer","managedPolicy":"keep"},"deploymentMode":"1p"}"#;
+    write(&paths, FileKind::ClaudeDesktopConfig, original);
+    adapter::apply(&paths, input(Client::ClaudeDesktop)).unwrap();
+    let configured = read(&paths, FileKind::ClaudeDesktopConfig);
+    assert!(configured["enterpriseConfig"]
+        .get("inferenceProvider")
+        .is_none());
+    assert!(configured["enterpriseConfig"]
+        .get("inferenceGatewayBaseUrl")
+        .is_none());
+    assert!(configured["enterpriseConfig"]
+        .get("inferenceGatewayApiKey")
+        .is_none());
+    assert_eq!(configured["enterpriseConfig"]["managedPolicy"], "keep");
+    storage::restore(&paths, Client::ClaudeDesktop).unwrap();
+    assert_eq!(
+        fs::read_to_string(paths.target(FileKind::ClaudeDesktopConfig)).unwrap(),
+        original
+    );
 }
 
 #[test]
@@ -134,6 +164,12 @@ fn vscode_updates_login_environment_preserves_jsonc_and_restores_both_files() {
     assert!(vars
         .iter()
         .any(|v| v["name"] == "KEEP_ME" && v["value"] == "yes"));
+    assert!(vars.iter().any(|v| {
+        v["name"] == "ANTHROPIC_DEFAULT_OPUS_MODEL" && v["value"] == "claude-opus-test"
+    }));
+    assert!(vars
+        .iter()
+        .any(|v| { v["name"] == "CLAUDE_CODE_AUTO_MODE_SERVER" && v["value"] == "0" }));
     for name in [
         "ANTHROPIC_API_KEY",
         "CLAUDE_CODE_USE_BEDROCK",
@@ -142,10 +178,11 @@ fn vscode_updates_login_environment_preserves_jsonc_and_restores_both_files() {
         "CLAUDE_CODE_ALWAYS_ENABLE_EFFORT",
     ] {
         assert!(
-            !vars.iter().any(|v| v["name"] == name),
-            "{name} was retained"
+            vars.iter().any(|v| v["name"] == name && v["value"] == ""),
+            "{name} was not neutralized"
         );
     }
+    assert_eq!(doc["claudeCode.disableLoginPrompt"], true);
     assert_eq!(
         read(&paths, FileKind::ClaudeSettings)["model"],
         "claude-opus-test"
@@ -199,7 +236,7 @@ fn codex_desktop_and_cli_share_catalog_credentials_and_restore_point() {
         .unwrap()
         .parse::<toml_edit::DocumentMut>()
         .unwrap();
-    assert_eq!(doc["cli_auth_credentials_store"].as_str(), Some("file"));
+    assert!(doc.get("cli_auth_credentials_store").is_none());
     assert_eq!(doc["model_provider"].as_str(), Some("tokentoapi-connect"));
     assert!(doc["model_catalog_json"]
         .as_str()

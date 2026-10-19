@@ -2,7 +2,11 @@ use std::{
     io::{Read, Write},
     net::TcpListener,
 };
-use tokentoapi_connect_lib::models::{self, Client, DiscoveryInput};
+use tokentoapi_connect_lib::{
+    adapter,
+    models::{self, Client, DiscoveryInput},
+    storage::{FileKind, Paths},
+};
 
 #[test]
 fn url_normalization_and_model_catalog_validation() {
@@ -20,7 +24,7 @@ fn url_normalization_and_model_catalog_validation() {
         assert!(models::normalize_root(url).is_err());
     }
     let models = models::catalog_models(
-        &serde_json::json!({"data":[{"id":"claude-sonnet-test"},{"id":"gpt-test-codex"},{"id":"gpt-test-codex"}]}),
+        &serde_json::json!({"data":[{"id":"claude-sonnet-test"},{"id":"gpt-test-codex"},{"id":"gpt-test-codex"},{"id":"gpt-image-1"},{"id":"whisper-1"},{"id":"text-embedding-3-large"}]}),
     );
     assert_eq!(models.len(), 2);
 
@@ -29,6 +33,31 @@ fn url_normalization_and_model_catalog_validation() {
         "models": [{"slug":"gateway-model"}]
     }));
     assert_eq!(fallback, vec!["gateway-model"]);
+}
+
+#[test]
+fn dedicated_media_models_are_filtered_and_backend_validation_rejects_them() {
+    for id in [
+        "gpt-image-1",
+        "dall-e-3",
+        "whisper-1",
+        "tts-1",
+        "text-embedding-3-large",
+        "sora-2",
+    ] {
+        assert!(!models::is_chat_model(id));
+        let data = models::DiscoveredModels {
+            client: Client::Codex,
+            api_key: "sk-fixture".into(),
+            root: "https://example.test".into(),
+            payload: serde_json::json!({"data":[{"id":id}]}),
+            choices: vec![models::ModelChoice {
+                id: id.into(),
+                name: id.into(),
+            }],
+        };
+        assert!(models::prepare_selection(&data, &[id.into()], id).is_err());
+    }
 }
 
 fn server(status: &str, headers: &str, body: &str) -> (String, std::thread::JoinHandle<String>) {
@@ -64,10 +93,107 @@ async fn discovery_authenticates_to_models_without_paid_inference() {
     let safe = serde_json::to_string(&models::DiscoverySession::new(data).response()).unwrap();
     assert!(!safe.contains("sk-test-not-a-real-key"));
     let received = server.join().unwrap();
-    assert!(received.starts_with("GET /v1/models "));
+    assert!(received.starts_with("GET /v1/models?client_version="));
     assert!(received
         .to_lowercase()
         .contains("authorization: bearer sk-test-not-a-real-key"));
+}
+
+fn capability_server(reject_manifest: bool) -> (String, std::thread::JoinHandle<Vec<String>>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let root = format!("http://{}", listener.local_addr().unwrap());
+    let handle = std::thread::spawn(move || {
+        let mut requests = Vec::new();
+        for _ in 0..if reject_manifest { 2 } else { 1 } {
+            let (mut socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(std::time::Duration::from_secs(3)))
+                .unwrap();
+            let mut buffer = [0u8; 8192];
+            let len = socket.read(&mut buffer).unwrap();
+            let request = String::from_utf8_lossy(&buffer[..len]).into_owned();
+            let manifest = request.starts_with("GET /v1/models?client_version=");
+            let (status, payload) = if manifest && reject_manifest {
+                (
+                    "400 Bad Request",
+                    serde_json::json!({"error":"query unsupported"}),
+                )
+            } else if manifest {
+                (
+                    "200 OK",
+                    serde_json::json!({"models":[
+                        {"slug":"gpt-5.6-sol","input_modalities":["text","image"],"context_window":272000},
+                        {"slug":"text-only-alias","input_modalities":["text"],"context_window":65536}
+                    ]}),
+                )
+            } else {
+                (
+                    "200 OK",
+                    serde_json::json!({"data":[{"id":"gpt-5.6-sol"},{"id":"text-only-alias"}]}),
+                )
+            };
+            let body = payload.to_string();
+            let response = format!("HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());
+            socket.write_all(response.as_bytes()).unwrap();
+            requests.push(request);
+        }
+        requests
+    });
+    (root, handle)
+}
+
+#[tokio::test]
+async fn codex_manifest_preserves_image_capabilities_and_repairs_an_old_catalog() {
+    let (root, server) = capability_server(false);
+    let mut discovery = request(root);
+    discovery.client = Client::CodexDesktop;
+    let data = models::discover(discovery).await.unwrap();
+    let home = tempfile::tempdir().unwrap();
+    let paths = Paths::for_home(home.path());
+    let selected = vec!["gpt-5.6-sol".into(), "text-only-alias".into()];
+    let prepare = || models::prepare_selection(&data, &selected, "gpt-5.6-sol").unwrap();
+    let catalog_path = paths.target(FileKind::CodexCatalog);
+    adapter::apply(&paths, prepare()).unwrap();
+    let mut installed: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&catalog_path).unwrap()).unwrap();
+    assert_eq!(
+        installed["models"][0]["input_modalities"],
+        serde_json::json!(["text", "image"])
+    );
+    assert_eq!(
+        installed["models"][1]["input_modalities"],
+        serde_json::json!(["text"])
+    );
+
+    installed["models"][0]["input_modalities"] = serde_json::json!(["text"]);
+    installed["models"][0]["auto_compact_token_limit"] = serde_json::json!(230000);
+    std::fs::write(&catalog_path, installed.to_string()).unwrap();
+    adapter::apply(&paths, prepare()).unwrap();
+    let repaired: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&catalog_path).unwrap()).unwrap();
+    assert_eq!(
+        repaired["models"][0]["input_modalities"],
+        serde_json::json!(["text", "image"])
+    );
+    assert_eq!(repaired["models"][0]["auto_compact_token_limit"], 230000);
+    assert!(!adapter::apply(&paths, prepare()).unwrap().changed);
+    assert_eq!(server.join().unwrap().len(), 1);
+}
+
+#[tokio::test]
+async fn rejected_codex_manifest_query_falls_back_once_and_claude_stays_plain() {
+    let (root, manifest_server) = capability_server(true);
+    let data = models::discover(request(root)).await.unwrap();
+    assert_eq!(data.choices[0].id, "gpt-5.6-sol");
+    let requests = manifest_server.join().unwrap();
+    assert!(requests[0].starts_with("GET /v1/models?client_version="));
+    assert!(requests[1].starts_with("GET /v1/models "));
+
+    let (root, server) = server("200 OK", "", r#"{"data":[{"id":"claude-sonnet-test"}]}"#);
+    let mut input = request(root);
+    input.client = Client::Claude;
+    models::discover(input).await.unwrap();
+    assert!(server.join().unwrap().starts_with("GET /v1/models "));
 }
 
 #[tokio::test]
@@ -152,6 +278,7 @@ fn model_selection_is_bound_to_the_discovery_session() {
         discovery_id: response.discovery_id,
         selected_models: vec!["custom-a".into()],
         default_model: "custom-a".into(),
+        options: Default::default(),
     };
     assert!(session.prepare(&request).unwrap().catalog.is_none());
     request.discovery_id = "previous-session".into();

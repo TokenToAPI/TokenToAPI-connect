@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.5 - 2026-10-19
+
+- Bind Codex API credentials to the selected provider without replacing `auth.json` or keyring login preferences; preserve or explicitly choose web search behavior.
+- Preserve Codex model capability metadata, including image input, context limits, and supported reasoning levels; filter dedicated media and embedding models from chat selection.
+- Clear inherited Claude Code credentials, model locks, and cloud-provider selectors when importing a gateway, while supporting per-purpose models and Artifact compatibility settings.
+- Respect VS Code's absolute `CLAUDE_CONFIG_DIR` consistently across preview, import, and restore; suppress the official-login prompt for third-party API use.
+- Clean up legacy Claude Desktop gateway fields, reject duplicate profiles, and resolve suffixed Windows configuration paths only when the target is unambiguous.
+- Warn when Claude Code is below the `2.1.242` custom-model-picker minimum and preserve unrelated client settings and exact restore behavior.
+- Added regression coverage for Codex image attachments, provider credentials, model filtering, Claude role settings, and platform path handling.
+
 ## v0.1.4 - 2026-10-16
 
 - Fixed Codex imports that could leave the effective context window at the legacy 32K fallback.

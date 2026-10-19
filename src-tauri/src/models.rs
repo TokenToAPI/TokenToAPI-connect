@@ -71,6 +71,8 @@ pub struct SelectionInput {
     pub discovery_id: String,
     pub selected_models: Vec<String>,
     pub default_model: String,
+    #[serde(default)]
+    pub options: crate::setup_options::SetupOptions,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelChoice {
@@ -100,6 +102,7 @@ pub struct ValidatedInput {
     pub model: String,
     pub selected_models: Vec<String>,
     pub catalog: Option<String>,
+    pub options: crate::setup_options::SetupOptions,
 }
 pub struct DiscoverySession {
     id: String,
@@ -133,7 +136,11 @@ impl DiscoverySession {
                 "The model list has expired; fetch the models again before importing.".into(),
             );
         }
-        prepare_selection(&self.data, &input.selected_models, &input.default_model)
+        let mut selected =
+            prepare_selection(&self.data, &input.selected_models, &input.default_model)?;
+        input.options.validate(&selected)?;
+        selected.options = input.options.clone();
+        Ok(selected)
     }
 }
 
@@ -173,7 +180,8 @@ pub fn catalog_models(payload: &Value) -> Vec<String> {
         for row in rows.iter().take(5000) {
             if let Some(id) = model_identifier(row) {
                 let id = id.trim();
-                if !id.is_empty()
+                if is_chat_model(id)
+                    && !id.is_empty()
                     && id.len() <= 200
                     && !id.chars().any(char::is_control)
                     && !models.iter().any(|s| s == id)
@@ -184,6 +192,20 @@ pub fn catalog_models(payload: &Value) -> Vec<String> {
         }
     }
     models
+}
+
+pub fn is_chat_model(id: &str) -> bool {
+    let id = id.to_ascii_lowercase();
+    ![
+        "gpt-image",
+        "dall-e",
+        "whisper-",
+        "tts-",
+        "text-embedding-",
+        "sora-",
+    ]
+    .iter()
+    .any(|prefix| id == *prefix || id.starts_with(prefix))
 }
 
 fn model_rows(payload: &Value) -> Option<&Vec<Value>> {
@@ -337,21 +359,34 @@ pub async fn discover(input: DiscoveryInput) -> Result<DiscoveredModels, String>
         .redirect(reqwest::redirect::Policy::none())
         .build()
         .map_err(|_| "Could not initialize the network connection.")?;
-    // The credential is only sent to this exact origin. No redirect or response body is echoed.
-    let mut response = client
-        .get(format!("{root}/v1/models"))
-        .bearer_auth(&api_key)
-        .header("Accept", "application/json")
-        .send()
-        .await
-        .map_err(|error| {
-            if error.is_timeout() {
-                "Connection timed out; check your network and the API address."
-            } else {
-                "Could not reach the API; check your network, certificates and the API address."
-            }
-            .to_string()
-        })?;
+    const CODEX_CATALOG_CLIENT_VERSION: &str = "0.162.0";
+    let endpoint = format!("{root}/v1/models");
+    let fetch = |codex_manifest: bool| {
+        let mut request = client
+            .get(&endpoint)
+            .bearer_auth(&api_key)
+            .header("Accept", "application/json");
+        if codex_manifest {
+            request = request.query(&[("client_version", CODEX_CATALOG_CLIENT_VERSION)]);
+        }
+        async move {
+            request.send().await.map_err(|error| {
+                if error.is_timeout() {
+                    "Connection timed out; check your network and the API address."
+                } else {
+                    "Could not reach the API; check your network, certificates and the API address."
+                }
+                .to_string()
+            })
+        }
+    };
+    // Codex's manifest may include image and reasoning capabilities omitted from the plain list.
+    // Credentials remain on this origin, with one narrow fallback for gateways that reject the query.
+    let codex_client = input.client.is_codex();
+    let mut response = fetch(codex_client).await?;
+    if codex_client && matches!(response.status().as_u16(), 400 | 404 | 405 | 422) {
+        response = fetch(false).await?;
+    }
     if !response.status().is_success() {
         return Err(match response.status().as_u16() {
             401 => "The API key failed authentication; check that the full key was copied.".into(),
@@ -424,7 +459,7 @@ pub fn prepare_selection(
     let available: HashSet<&str> = data.choices.iter().map(|m| m.id.as_str()).collect();
     let mut seen = HashSet::new();
     for id in selected {
-        if !available.contains(id.as_str()) || !seen.insert(id) {
+        if !available.contains(id.as_str()) || !is_chat_model(id) || !seen.insert(id) {
             return Err(
                 "A selected model is not in the catalog returned for this key, or it was selected more than once. Fetch the models again.".into(),
             );
@@ -445,6 +480,7 @@ pub fn prepare_selection(
         model: default_model.into(),
         selected_models: selected.to_vec(),
         catalog,
+        options: crate::setup_options::SetupOptions::default(),
     })
 }
 
@@ -630,6 +666,7 @@ mod session_tests {
             discovery_id: session.response().discovery_id,
             selected_models: vec!["a".into()],
             default_model: "a".into(),
+            options: Default::default(),
         };
         assert!(session.prepare(&input).is_ok());
         session.created = Instant::now() - Duration::from_secs(901);

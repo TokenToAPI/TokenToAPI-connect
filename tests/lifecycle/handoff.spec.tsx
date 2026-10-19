@@ -17,7 +17,7 @@ const click=async (text:string) => {const button=[...host.querySelectorAll('butt
 beforeEach(async () => {
  (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
  HTMLDialogElement.prototype.showModal=function(){this.open=true;}; HTMLDialogElement.prototype.close=function(){this.open=false;};
- window.scrollTo=vi.fn(); localStorage.clear(); native.pending=null; vi.clearAllMocks();
+ window.scrollTo=vi.fn(); vi.stubGlobal('localStorage', {clear:vi.fn(),getItem:()=>null,setItem:vi.fn()}); native.pending=null; vi.clearAllMocks();
  native.points.mockResolvedValue([{client:'codex',available:true,reviewId:'review',files:[{modifiedSinceImport:true}],error:null}]);
  native.accept.mockResolvedValue({requestId:'handoff',providerName:'Fixture',baseUrl:'https://tokentoapi.com',suggestedClient:'codex',allowedClients:['codex','codex-desktop'],gatewayNeedsReview:false});
  native.discover.mockResolvedValue({discoveryId:'models',models:[{id:'gpt-5.5',name:'GPT'}]});

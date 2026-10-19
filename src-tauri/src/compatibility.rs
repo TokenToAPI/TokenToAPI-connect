@@ -140,6 +140,29 @@ fn version_number(text: &str) -> Option<String> {
         .map(str::to_owned)
 }
 
+fn version_parts(text: &str) -> Option<([u64; 3], bool)> {
+    let token = text
+        .split_whitespace()
+        .find(|part| part.chars().next().is_some_and(|c| c.is_ascii_digit()))?;
+    let (version, prerelease) = token
+        .split_once('-')
+        .map_or((token, false), |(version, _)| (version, true));
+    let mut parts = [0; 3];
+    for (index, part) in version.split('.').take(3).enumerate() {
+        parts[index] = part.parse().ok()?;
+    }
+    Some((parts, prerelease))
+}
+
+fn version_cmp(left: &str, right: &str) -> Option<std::cmp::Ordering> {
+    let (left, left_prerelease) = version_parts(left)?;
+    let (right, right_prerelease) = version_parts(right)?;
+    Some(
+        left.cmp(&right)
+            .then_with(|| right_prerelease.cmp(&left_prerelease)),
+    )
+}
+
 #[cfg(target_os = "macos")]
 fn app(paths: &Paths, names: &[&str]) -> Option<PathBuf> {
     [
@@ -197,14 +220,6 @@ pub fn inspect(paths: &Paths, client: Client) -> Compatibility {
                     .as_deref()
                     .and_then(version_number);
             }
-            if client == Client::Claude
-                && result
-                    .version
-                    .as_deref()
-                    .is_some_and(|v| v.starts_with("1."))
-            {
-                result.warnings.push("Detected Claude Code 1.x: the gateway and default model can be read, but the selected-models menu is not supported. Upgrade Claude Code to use multi-model selection.".into());
-            }
         }
         Client::ClaudeVscode => {
             if let Ok(entries) = fs::read_dir(paths.home.join(".vscode/extensions")) {
@@ -217,7 +232,14 @@ pub fn inspect(paths: &Paths, client: Client) -> Compatibility {
                         result.installed = true;
                         if let Ok(text) = fs::read_to_string(entry.path().join("package.json")) {
                             if let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) {
-                                result.version = value["version"].as_str().map(str::to_owned);
+                                if let Some(version) = value["version"].as_str() {
+                                    if result.version.as_deref().is_none_or(|current| {
+                                        version_cmp(version, current)
+                                            .is_some_and(std::cmp::Ordering::is_gt)
+                                    }) {
+                                        result.version = Some(version.to_owned());
+                                    }
+                                }
                             }
                         }
                     }
@@ -294,6 +316,13 @@ pub fn inspect(paths: &Paths, client: Client) -> Compatibility {
             }
         }
     }
+    if matches!(client, Client::Claude | Client::ClaudeVscode)
+        && result.version.as_deref().is_some_and(|version| {
+            version_cmp(version, "2.1.242").is_some_and(std::cmp::Ordering::is_lt)
+        })
+    {
+        result.warnings.push("The detected Claude Code version is below 2.1.242. The gateway and default model can be configured, but the custom multi-model picker requires Claude Code 2.1.242 or later.".into());
+    }
     if !result.installed {
         result.warnings.insert(
             0,
@@ -302,6 +331,23 @@ pub fn inspect(paths: &Paths, client: Client) -> Compatibility {
                 client.name()
             ),
         );
+    }
+    if client.is_codex() {
+        let path = paths.target(crate::storage::FileKind::CodexConfig);
+        if let Ok(text) = fs::read_to_string(path) {
+            if let Ok(config) =
+                crate::patch::toml::parse(Path::new("config.toml"), Some(text.as_bytes()))
+            {
+                if ["openai", "ollama", "lmstudio"].iter().any(|name| {
+                    config
+                        .get("model_providers")
+                        .and_then(|providers| providers.get(name))
+                        .is_some()
+                }) {
+                    result.warnings.push("Codex has a provider table using a reserved name. Import will back it up and remove the incompatible table; restore can return it exactly.".into());
+                }
+            }
+        }
     }
     if client.is_codex() {
         result
@@ -332,6 +378,23 @@ pub fn next_steps(client: Client) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn claude_model_picker_minimum_version_uses_semantic_comparison() {
+        for (version, supported) in [
+            ("1.9.99", false),
+            ("2.1.241", false),
+            ("2.1.242-beta.1", false),
+            ("2.1.242", true),
+            ("2.2.0", true),
+        ] {
+            assert_eq!(
+                version_cmp(version, "2.1.242").is_some_and(|order| !order.is_lt()),
+                supported,
+                "{version}"
+            );
+        }
+    }
 
     #[test]
     fn windows_resolves_native_and_npm_launchers_without_picking_posix_shim() {

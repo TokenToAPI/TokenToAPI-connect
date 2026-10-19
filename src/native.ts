@@ -48,6 +48,11 @@ export interface DiscoveryResult {
   baseUrl: string;
   models: ModelChoice[];
 }
+export interface SetupOptions {
+  claudeModels: Partial<Record<"haiku" | "sonnet" | "opus" | "fable" | "subagent", string>>;
+  artifactMode: "preserve" | "disabled" | "enabled";
+  webSearch: "preserve" | "disabled" | "cached" | "live";
+}
 export function discoverModels(input: {
   client: Client;
   apiKey: string;
@@ -59,6 +64,7 @@ export function importConfig(input: {
   discoveryId: string;
   selectedModels: string[];
   defaultModel: string;
+  options: SetupOptions;
 }): Promise<ImportResult> {
   return invoke("import_config", { input });
 }
