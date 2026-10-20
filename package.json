@@ -1,6 +1,6 @@
 {
   "name": "tokentoapi-connect",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -27,16 +27,20 @@
     "test:stations": "node --experimental-strip-types --test tests/stations.test.ts",
     "test:core": "cargo test --manifest-path src-tauri/Cargo.toml --no-default-features",
     "test:ui": "node --experimental-strip-types --test tests/*.test.ts",
-    "test:lifecycle": "vitest run"
+    "test:lifecycle": "vitest run",
+    "build:windows:installer": "node scripts/build-windows-installer.mjs",
+    "release:manifest": "node scripts/prepare-update-manifest.mjs"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.8.0",
+    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-updater": "^2.14.0",
     "lucide-react": "^0.542.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.8.0",
+    "@tauri-apps/cli": "^2.12.1",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",

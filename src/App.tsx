@@ -58,6 +58,7 @@ import {
 } from "./selection";
 import StationEditor from "./StationEditor";
 import RestorePanel from "./RestorePanel";
+import UpdatePanel from "./UpdatePanel";
 import HandoffPanel from "./HandoffPanel";
 import SetupOptionsPanel from "./SetupOptionsPanel";
 import { DEFAULT_OPTIONS, selectedOptions } from "./setup-options";
@@ -178,7 +179,8 @@ export default function App() {
   const effectiveOptions = selectedOptions(client, selection.ids, options);
   const clientStatus = status?.clients.find((item) => item.client === client);
   const hasRestorePoint = status?.clients.some((item) => item.hasBackup) ?? false;
-  const disabled = busy !== null;
+  const [installingUpdate, setInstallingUpdate] = useState(false);
+  const disabled = busy !== null || installingUpdate;
   const family = clientFamily(client);
   const matching =
     discovery?.models.filter((model) =>
@@ -1190,6 +1192,9 @@ export default function App() {
                   </button>
                 )}
                 {step === 3 && (
+                  <button className="back-button" disabled={disabled} onClick={() => void fetchModels()}>Refresh models</button>
+                )}
+                {step === 3 && (
                   <button
                     className="primary-button"
                     disabled={
@@ -1225,6 +1230,7 @@ export default function App() {
           </span>
         </div>
       </div>
+      <UpdatePanel busy={disabled} onInstalling={setInstallingUpdate} />
       <footer className="app-footer">
         <span>TokenToAPI Connect</span>
         <button onClick={() => setAbout(true)} className="version-button">

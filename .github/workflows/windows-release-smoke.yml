@@ -1,0 +1,57 @@
+name: Windows release smoke test
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published or draft release tag to test
+        required: true
+        default: v0.1.8
+permissions:
+  contents: read
+jobs:
+  installer:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download release installer
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid tag" }
+          gh release download $env:RELEASE_TAG --repo $env:REPOSITORY --pattern '*Windows-x64-setup.exe'
+          if ($LASTEXITCODE -ne 0) { throw "Download failed" }
+      - name: Install, launch, upgrade in place, and preserve settings
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          $installer = (Get-ChildItem '*Windows-x64-setup.exe').FullName
+          $destination = Join-Path $env:LOCALAPPDATA 'TokenToAPI Connect'
+          $config = Join-Path $env:USERPROFILE '.tokentoapi-connect'
+          New-Item -ItemType Directory -Force $config | Out-Null
+          $marker = Join-Path $config 'smoke-backup.txt'
+          Set-Content $marker 'original settings preserved'
+          $install = Start-Process $installer -ArgumentList @('/S', "/D=$destination") -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Installer failed: $($install.ExitCode)" }
+          $exe = Join-Path $destination 'tokentoapi-connect.exe'
+          if (!(Test-Path $exe)) { throw "Installed executable missing" }
+          $version = (Get-Item $exe).VersionInfo.ProductVersion
+          if ($version -ne $env:RELEASE_TAG.Substring(1)) { throw "Wrong executable version: $version" }
+          $app = Start-Process $exe -PassThru
+          Start-Sleep 10
+          $app.Refresh()
+          if ($app.HasExited) { throw "App exited unexpectedly: $($app.ExitCode)" }
+          if ($app.MainWindowHandle -eq 0) { throw "App window did not open" }
+          Stop-Process -Id $app.Id -Force
+          $upgrade = Start-Process $installer -ArgumentList @('/S', '/UPDATE') -Wait -PassThru
+          if ($upgrade.ExitCode -ne 0) { throw "Update installer failed" }
+          if ((Get-Content $marker -Raw).Trim() -ne 'original settings preserved') { throw "Settings changed" }
+          $app = Start-Process $exe -PassThru
+          Start-Sleep 10
+          $app.Refresh()
+          if ($app.HasExited -or $app.MainWindowHandle -eq 0) { throw "Updated app did not launch" }
+          Stop-Process -Id $app.Id -Force
+          Write-Output "Installer, native launch, update-mode reinstall, and settings preservation passed."

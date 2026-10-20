@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.8 - 2026-10-20
+
+- Add signed in-app updates with automatic checks, manual checks, progress, retry, and restart handling.
+- Bind signed packages to their release version and preserve user configuration and backups.
+- Add a Windows per-user installer and retain portable downloads.
+- Add Refresh models for current gateway capabilities without reinstalling Connect.
+- Add release-manifest generation, artifact security checks, and native Windows smoke coverage.
+
 ## v0.1.7 - 2026-10-20
 
 - Expand image capability coverage to 24 verified models, including GPT-5.5 and older Codex models; keep the two GPT-OSS models text-only.

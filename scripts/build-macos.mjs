@@ -66,6 +66,15 @@ Latest verification notes: https://github.com/TokenToAPI/TokenToAPI-connect/blob
   const archive = path.join(stage, name);
   run('/usr/bin/ditto', ['-c', '-k', '--norsrc', '--keepParent', folder, archive]);
   fs.copyFileSync(archive, path.join(release, name));
+  // Sign the exact sealed app shipped in the ZIP, including its license file.
+  const updaterArchive = path.join(release, `TokenToAPI-Connect-${version}-macOS-arm64.app.tar.gz`);
+  run('/usr/bin/tar', ['--no-xattrs', '-czf', updaterArchive, '-C', folder, 'TokenToAPI Connect.app'],
+    { env: { ...process.env, COPYFILE_DISABLE: '1' } });
+  const signerEnv = { ...process.env };
+  delete signerEnv.TAURI_SIGNING_PRIVATE_KEY;
+  run(process.execPath, [path.join(root, 'node_modules/@tauri-apps/cli/tauri.js'),
+    'signer', 'sign', '--private-key-path', process.env.TAURI_SIGNING_PRIVATE_KEY, '--app-version', version, updaterArchive],
+    { env: signerEnv });
   const hashes = fs.readdirSync(release).filter(name => name.startsWith(`TokenToAPI-Connect-${version}-`) && name.endsWith('.zip')).sort()
     .map(name => `${createHash('sha256').update(fs.readFileSync(path.join(release, name))).digest('hex')}  ${name}`);
   fs.writeFileSync(path.join(release, `SHA256SUMS-${version}.txt`), hashes.join('\n') + '\n');

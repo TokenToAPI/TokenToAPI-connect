@@ -2031,3 +2031,7 @@ strong {
 .handoff-banner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
 .handoff-banner div { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .handoff-banner select { max-width: 220px; padding: 6px; border-radius: 6px; }
+
+.update-panel { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px; margin: 16px auto; max-width: 620px; font-size: 13px; }
+.update-panel button { padding: 8px 12px; border: 1px solid currentColor; border-radius: 8px; color: inherit; background: transparent; cursor: pointer; }
+.update-panel button:disabled { opacity: .5; cursor: default; }

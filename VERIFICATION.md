@@ -1,3 +1,14 @@
+# v0.1.8 verification
+
+Release validation in progress on 2026-10-20; publish only after the release checks below finish.
+
+- 95 core Rust tests, TypeScript, 15 frontend tests and 8 UI lifecycle tests passed.
+- The real signed macOS release passed verification and installation into an isolated temporary app bundle. Modified archive bytes and a substituted manifest version were rejected before replacement. A configuration/backup sentinel outside the bundle was preserved.
+- This test caught AppleDouble metadata in the initial archive; packaging now excludes macOS extended attributes and resource-fork sidecars.
+- macOS and Windows release packages built successfully. The updater signatures bind each package to version 0.1.8; the app requires this binding and rejects downgrades by default.
+- Windows native installer smoke test, final native Codex regression, and published-asset checks are pending.
+- OS publisher signing/notarization remains unchanged. Update signature verification is separate and mandatory.
+
 # v0.1.7 verification
 
 Release validation completed on 2026-10-20.

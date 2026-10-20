@@ -1,2 +1,7 @@
-ef1650bc4ec5a67f6ef02d94c5bc8f1784bb52bfcb8afb35508ce3d5af38fda5  TokenToAPI-Connect-0.1.7-Windows-x64-portable.zip
-8f5a07967d00517678946a0dd29def442f484d2428162cecac436eabb2ed78d4  TokenToAPI-Connect-0.1.7-macOS-arm64.zip
+ab53b703e7456eaf9044363d4e6796ce2134bce58497748fb3787a498c3946e7  TokenToAPI-Connect-0.1.8-Windows-x64-portable.zip
+8c20d09b0e28325e8af516a7ca619f01197d211a830fdd3496b2de9cff497657  TokenToAPI-Connect-0.1.8-Windows-x64-setup.exe
+c0ab080406acbfa39442344547d3482474e3b00298f18cf5c00eea15356a1074  TokenToAPI-Connect-0.1.8-Windows-x64-setup.exe.sig
+749d31cbe469f6ba74a381d6278ded7d7a3b8ccaabf0d051ae43dd9abb1966b0  TokenToAPI-Connect-0.1.8-macOS-arm64.app.tar.gz
+b4e7e5247acdf6ac4db626bcf066b96a49f081a1ed20d88ab6e29c554942e89b  TokenToAPI-Connect-0.1.8-macOS-arm64.app.tar.gz.sig
+ea7189589531f04b1d687c7d37ca96458dfa9a2222e5f2b0e6b85c4500d20a45  TokenToAPI-Connect-0.1.8-macOS-arm64.zip
+f84c8c75c6d92686eb4d1236ee3cf8956c22b4f8f410abc435455f1b3a1115c5  latest.json
