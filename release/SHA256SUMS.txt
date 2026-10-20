@@ -4,4 +4,4 @@ c0ab080406acbfa39442344547d3482474e3b00298f18cf5c00eea15356a1074  TokenToAPI-Con
 749d31cbe469f6ba74a381d6278ded7d7a3b8ccaabf0d051ae43dd9abb1966b0  TokenToAPI-Connect-0.1.8-macOS-arm64.app.tar.gz
 b4e7e5247acdf6ac4db626bcf066b96a49f081a1ed20d88ab6e29c554942e89b  TokenToAPI-Connect-0.1.8-macOS-arm64.app.tar.gz.sig
 ea7189589531f04b1d687c7d37ca96458dfa9a2222e5f2b0e6b85c4500d20a45  TokenToAPI-Connect-0.1.8-macOS-arm64.zip
-f84c8c75c6d92686eb4d1236ee3cf8956c22b4f8f410abc435455f1b3a1115c5  latest.json
+b069183c6fcbb126cc76c8119e490e1691e3a28ae520a45b2eb9c70e6d956d3c  latest.json

@@ -42,6 +42,23 @@ fn signed_release_replaces_app_and_rejects_tampering() {
     .unwrap();
     let update = updater.restore_update(manifest.clone()).unwrap().unwrap();
     update.verify(&bytes).unwrap();
+    let windows = app
+        .updater_builder()
+        .target("windows-x86_64")
+        .executable_path(&executable)
+        .build()
+        .unwrap()
+        .restore_update(manifest.clone())
+        .unwrap()
+        .unwrap();
+    let installer = fs::read(root.join(format!(
+        "release/TokenToAPI-Connect-{version}-Windows-x64-setup.exe"
+    )))
+    .unwrap();
+    windows.verify(&installer).unwrap();
+    let mut older = manifest.clone();
+    older["version"] = Value::String("0.0.0".into());
+    assert!(updater.restore_update(older).unwrap().is_none());
     let mut corrupt = bytes.clone();
     let last = corrupt.len() - 1;
     corrupt[last] ^= 1;

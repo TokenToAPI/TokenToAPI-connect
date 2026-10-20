@@ -1,12 +1,16 @@
 # v0.1.8 verification
 
-Release validation in progress on 2026-10-20; publish only after the release checks below finish.
+Release validation completed on 2026-10-20.
 
 - 95 core Rust tests, TypeScript, 15 frontend tests and 8 UI lifecycle tests passed.
 - The real signed macOS release passed verification and installation into an isolated temporary app bundle. Modified archive bytes and a substituted manifest version were rejected before replacement. A configuration/backup sentinel outside the bundle was preserved.
 - This test caught AppleDouble metadata in the initial archive; packaging now excludes macOS extended attributes and resource-fork sidecars.
 - macOS and Windows release packages built successfully. The updater signatures bind each package to version 0.1.8; the app requires this binding and rejects downgrades by default.
-- Windows native installer smoke test, final native Codex regression, and published-asset checks are pending.
+- Windows native installer smoke test passed on GitHub Actions: installation, native window launch, update-mode reinstallation, relaunch, and settings preservation. [Run 39420741989](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/39420741989).
+- Both platform update signatures passed the real Tauri verifier. The release test also rejects downgrades. The macOS ZIP and update archive contain the same sealed app.
+- Desktop Clippy with warnings denied and formatting passed. All seven native Codex 0.162.1 scenarios passed, including 24 capability declarations and 44 image turns across the 22 vision models.
+- This is the first updater-enabled release. Windows testing exercised the actual installer in update mode; the UI download/install state flow is tested with mocked plugin events. No future-version production update is claimed.
+- The signing private key is protected outside the repository. Neither release assets nor the Windows CI workflow contain it. The workflow requires contents-write solely to read draft releases, and does not publish or modify releases.
 - OS publisher signing/notarization remains unchanged. Update signature verification is separate and mandatory.
 
 # v0.1.7 verification
