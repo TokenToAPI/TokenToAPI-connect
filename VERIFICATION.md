@@ -1,3 +1,14 @@
+# v0.1.9 verification
+
+- 97 core Rust tests passed, including Grok import/reimport, unrelated settings preservation, exact restore, malformed TOML and missing-context rejection.
+- TypeScript, 16 frontend tests and eight lifecycle tests passed. The lifecycle suite covers update checks, progress, installation/restart, errors and import locking.
+- Official Grok Build 1.0.62 (1474f9cbdd91), on macOS, accepted the generated configuration, exposed only the selected models, sent authenticated Responses requests using the original model IDs, switched models with a supported reasoning effort, and restored the original configuration. Tests used a temporary home and fake loopback credentials.
+- Native Codex 0.162.1 passed seven scenarios. The capability matrix covered 29 declarations, including four declared Grok vision models and one text-only Grok alias; 26 vision models sent 52 URL/local-file image turns. Grok declarations in this test are gateway fixtures, not a claim that every upstream Grok deployment supports images.
+- Platform handoff tests passed for new and old clients, Responses routes, Claude-only restrictions and duplicate prevention. The latest-release download resolver passed all 24 tests; frontend locale checks and production build passed.
+- macOS arm64 and Windows x64 packages were built. Final signed update, native Windows upgrade, and production-download results are recorded below once completed.
+
+No customer API keys were used. Paid upstream inference and native Grok on Windows are not claimed by these tests. macOS remains ad-hoc signed/unnotarized and Windows is not publisher-signed.
+
 # v0.1.8 verification
 
 Release validation completed on 2026-10-20.

@@ -93,6 +93,7 @@ pub async fn redeem(link: &HandoffLink, allow_loopback: bool) -> Result<HandoffS
         .map_err(|_| RETRY)?;
     let mut response = client
         .post(format!("{}/api/v1/connect/handoff/redeem", link.issuer))
+        .header("X-TokenToAPI-Connect-Capabilities", "grok-cli")
         .json(&serde_json::json!({"code": link.code}))
         .send()
         .await
@@ -127,13 +128,13 @@ pub async fn redeem(link: &HandoffLink, allow_loopback: bool) -> Result<HandoffS
             .any(|c| c.is_whitespace() || c.is_control())
         || !matches!(
             setup.suggested_client,
-            models::Client::Claude | models::Client::Codex
+            models::Client::Claude | models::Client::Codex | models::Client::Grok
         )
     {
         return Err(RETRY.into());
     }
     if setup.allowed_clients.is_empty()
-        || setup.allowed_clients.len() > 5
+        || setup.allowed_clients.len() > models::Client::ALL.len()
         || !setup.allowed_clients.contains(&setup.suggested_client)
     {
         return Err(RETRY.into());

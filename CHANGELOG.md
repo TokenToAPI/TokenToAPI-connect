@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.9 - 2026-10-20
+
+- Add official Grok CLI setup, selected model routing, declared context and reasoning settings, and exact backup/restore.
+- Support Grok chat models across compatible clients and exclude Grok media generators from chat selection.
+- Negotiate native Grok handoff support without breaking older Connect releases.
+- Expand native client and version-to-version update regression coverage.
+
 ## v0.1.8 - 2026-10-20
 
 - Add signed in-app updates with automatic checks, manual checks, progress, retry, and restart handling.

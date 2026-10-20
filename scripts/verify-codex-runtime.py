@@ -105,10 +105,16 @@ class Gateway(BaseHTTPRequestHandler):
         response = {
             "id": f"resp_{len(self.server.requests)}",
             "object": "response",
+            "created_at": int(time.time()), "error": None, "incomplete_details": None,
+            "instructions": None, "max_output_tokens": None, "parallel_tool_calls": True,
+            "previous_response_id": None, "reasoning": {"effort": None, "summary": None},
+            "store": False, "temperature": 1.0, "tool_choice": "auto", "tools": [],
+            "top_p": 1.0, "truncation": "disabled", "user": None, "metadata": {},
+            "text": {"format": {"type": "text"}},
             "model": request["model"],
             "status": "completed",
             "output": [message],
-            "usage": {"input_tokens": tokens, "output_tokens": 1, "total_tokens": tokens + 1},
+            "usage": {"input_tokens": tokens, "output_tokens": 1, "total_tokens": tokens + 1, "input_tokens_details": {"cached_tokens": 0}, "output_tokens_details": {"reasoning_tokens": 0}},
         }
         events = [
             {"type": "response.created", "response": {**response, "status": "in_progress", "output": []}},
@@ -117,6 +123,8 @@ class Gateway(BaseHTTPRequestHandler):
             {"type": "response.output_item.done", "output_index": 0, "item": message},
             {"type": "response.completed", "response": response},
         ]
+        for sequence, event in enumerate(events):
+            event["sequence_number"] = sequence
         stream = "".join(
             f"event: {event['type']}\ndata: {json.dumps(event)}\n\n" for event in events
         ).encode()
@@ -419,7 +427,12 @@ def run_capability_matrix(binary, fixture, temporary, output, gateway, endpoint)
     (home / ".tokentoapi-codex-fixture").touch()
     evidence = json.loads((ROOT / "docs/testing/model-modality-evidence.json").read_text())["models"]
     selected = list(evidence)
-    gateway.manifest_payload = {"data": [{"id": name} for name in selected]}
+    grok_rows = [{"id": name, "context_window": 500000, "input_modalities": ["text", "image"]} for name in ["grok-4.3", "grok-4.5", "grok-4.6", "grok-4.7"]]
+    grok_rows.append({"id": "grok-text-only-alias", "context_window": 128000, "input_modalities": ["text"]})
+    for row in grok_rows:
+        selected.append(row["id"])
+        evidence[row["id"]] = {"input_modalities": row["input_modalities"]}
+    gateway.manifest_payload = {"data": [{"id": name} for name in selected if not name.startswith("grok-")] + grok_rows}
     gateway.plain_payload = gateway.manifest_payload
     gateway.requests, gateway.usage = [], 100
     gateway.model_requests = []

@@ -13,6 +13,7 @@ const targets: { client: Client; name: string }[] = [
   { client: "claude-desktop", name: "Claude Desktop" },
   { client: "claude", name: "Claude Code · Terminal" },
   { client: "claude-vscode", name: "Claude Code · VS Code" },
+  { client: "grok", name: "Grok CLI" },
   { client: "codex", name: "Codex · Desktop & terminal" },
 ];
 

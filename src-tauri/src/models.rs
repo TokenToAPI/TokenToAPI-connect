@@ -10,6 +10,7 @@ use std::{
 #[serde(rename_all = "lowercase")]
 pub enum Client {
     Claude,
+    Grok,
     Codex,
     #[serde(rename = "claude-desktop")]
     ClaudeDesktop,
@@ -19,12 +20,13 @@ pub enum Client {
     CodexDesktop,
 }
 impl Client {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
         Self::CodexDesktop,
         Self::Codex,
         Self::ClaudeDesktop,
         Self::Claude,
         Self::ClaudeVscode,
+        Self::Grok,
     ];
     pub fn is_codex(self) -> bool {
         matches!(self, Self::Codex | Self::CodexDesktop)
@@ -39,6 +41,7 @@ impl Client {
     }
     pub fn id(self) -> &'static str {
         match self {
+            Self::Grok => "grok",
             Self::Claude => "claude",
             Self::Codex => "codex",
             Self::ClaudeDesktop => "claude-desktop",
@@ -48,6 +51,7 @@ impl Client {
     }
     pub fn name(self) -> &'static str {
         match self {
+            Self::Grok => "Grok CLI",
             Self::Claude => "Claude Code Terminal",
             Self::Codex => "Codex Terminal",
             Self::ClaudeDesktop => "Claude Desktop",
@@ -195,7 +199,7 @@ pub fn catalog_models(payload: &Value) -> Vec<String> {
 }
 
 pub fn is_chat_model(id: &str) -> bool {
-    let id = id.to_ascii_lowercase();
+    let id = id.rsplit('/').next().unwrap_or(id).to_ascii_lowercase();
     ![
         "gpt-image",
         "dall-e",
@@ -203,6 +207,8 @@ pub fn is_chat_model(id: &str) -> bool {
         "tts-",
         "text-embedding-",
         "sora-",
+        "grok-imagine",
+        "grok-voice",
     ]
     .iter()
     .any(|prefix| id == *prefix || id.starts_with(prefix))
@@ -404,7 +410,7 @@ pub async fn discover(input: DiscoveryInput) -> Result<DiscoveredModels, String>
     };
     // Codex's manifest may include image and reasoning capabilities omitted from the plain list.
     // Credentials remain on this origin, with one narrow fallback for gateways that reject the query.
-    let codex_client = input.client.is_codex();
+    let codex_client = input.client.is_codex() || input.client == Client::Grok;
     let mut response = fetch(codex_client).await?;
     if codex_client && matches!(response.status().as_u16(), 400 | 404 | 405 | 422) {
         response = fetch(false).await?;
@@ -490,7 +496,7 @@ pub fn prepare_selection(
     if !selected.iter().any(|id| id == default_model) {
         return Err("Specify a default model from the selected ones.".into());
     }
-    let catalog = if data.client.is_codex() {
+    let catalog = if data.client.is_codex() || data.client == Client::Grok {
         Some(build_codex_catalog(&data.payload, selected)?)
     } else {
         None

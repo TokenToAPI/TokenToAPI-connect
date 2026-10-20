@@ -77,6 +77,9 @@ async fn redeem_uses_body_and_keeps_credentials_native() {
     let request = thread.join().unwrap();
     assert!(request.starts_with("POST /api/v1/connect/handoff/redeem HTTP/1.1"));
     assert!(request
+        .to_ascii_lowercase()
+        .contains("x-tokentoapi-connect-capabilities: grok-cli"));
+    assert!(request
         .split_once("\r\n\r\n")
         .unwrap()
         .1

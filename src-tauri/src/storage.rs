@@ -16,6 +16,7 @@ pub struct Paths {
     pub claude_threep: PathBuf,
     pub vscode: PathBuf,
     pub codex: PathBuf,
+    pub grok: PathBuf,
     pub state: PathBuf,
     pub sandbox: bool,
 }
@@ -38,6 +39,7 @@ impl Paths {
             claude_threep: app_data.join("Claude-3p"),
             vscode,
             codex: home.join(".codex"),
+            grok: home.join(".grok"),
             state: home.join(".tokentoapi-connect"),
             sandbox: true,
         }
@@ -71,6 +73,7 @@ impl Paths {
         let mut paths = Self::for_home(&home);
         paths.claude = override_dir("CLAUDE_CONFIG_DIR", paths.claude)?;
         paths.codex = override_dir("CODEX_HOME", paths.codex)?;
+        paths.grok = override_dir("GROK_HOME", paths.grok)?;
         #[cfg(target_os = "windows")]
         {
             let data = override_dir("LOCALAPPDATA", home.join("AppData/Local"))?;
@@ -140,6 +143,7 @@ impl Paths {
             )),
             FileKind::ClaudeDesktopMeta => self.claude_threep.join("configLibrary/_meta.json"),
             FileKind::ClaudeVscode => self.vscode.clone(),
+            FileKind::GrokConfig => self.grok.join("config.toml"),
             FileKind::CodexConfig => self.codex.join("config.toml"),
             FileKind::CodexAuth => self.codex.join("auth.json"),
             FileKind::CodexCatalog => self.codex.join("tokentoapi-models.json"),
@@ -240,12 +244,14 @@ pub enum FileKind {
     ClaudeDesktopMeta,
     ClaudeVscode,
     CodexConfig,
+    GrokConfig,
     CodexAuth,
     CodexCatalog,
 }
 impl FileKind {
     pub fn primary(client: Client) -> Self {
         match client {
+            Client::Grok => Self::GrokConfig,
             Client::Claude => Self::ClaudeSettings,
             Client::ClaudeDesktop => Self::ClaudeDesktopProfile,
             Client::ClaudeVscode => Self::ClaudeVscode,
@@ -254,6 +260,7 @@ impl FileKind {
     }
     fn belongs_to(self, client: Client) -> bool {
         match client {
+            Client::Grok => self == Self::GrokConfig,
             Client::Claude => self == Self::ClaudeSettings,
             Client::ClaudeDesktop => matches!(
                 self,

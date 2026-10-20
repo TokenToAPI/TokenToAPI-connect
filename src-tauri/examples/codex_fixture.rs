@@ -23,7 +23,7 @@ async fn main() -> Result<(), String> {
     if !fixture.home.is_absolute()
         || !fixture.home.join(".tokentoapi-codex-fixture").is_file()
         || !fixture.root.starts_with("http://127.0.0.1:")
-        || !fixture.client.is_codex()
+        || !(fixture.client.is_codex() || fixture.client == models::Client::Grok)
     {
         return Err("Only marked temporary homes and a loopback gateway are allowed".into());
     }
@@ -31,7 +31,7 @@ async fn main() -> Result<(), String> {
     if fixture.restore {
         let point = restore::list(&paths)
             .into_iter()
-            .find(|point| point.client == models::Client::Codex)
+            .find(|point| point.client == fixture.client.backup_client())
             .ok_or("restore point missing")?;
         let result = restore::apply(
             &paths,

@@ -5,6 +5,10 @@ on:
       tag:
         description: Published or draft release tag to test
         required: true
+        default: v0.1.9
+      previous_tag:
+        description: Previous stable version to upgrade from
+        required: true
         default: v0.1.8
 permissions:
   # GitHub requires write access to read draft releases. This workflow never
@@ -20,15 +24,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
+          PREVIOUS_TAG: ${{ inputs.previous_tag }}
           REPOSITORY: ${{ github.repository }}
         run: |
           if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid tag" }
+          if ($env:PREVIOUS_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid previous tag" }
+          gh release download $env:PREVIOUS_TAG --repo $env:REPOSITORY --pattern '*Windows-x64-setup.exe' --dir previous
+          if ($LASTEXITCODE -ne 0) { throw "Previous download failed" }
           gh release download $env:RELEASE_TAG --repo $env:REPOSITORY --pattern '*Windows-x64-setup.exe'
           if ($LASTEXITCODE -ne 0) { throw "Download failed" }
       - name: Install, launch, upgrade in place, and preserve settings
         shell: pwsh
         env:
           RELEASE_TAG: ${{ inputs.tag }}
+          PREVIOUS_TAG: ${{ inputs.previous_tag }}
         run: |
           $installer = (Get-ChildItem '*Windows-x64-setup.exe').FullName
           $destination = Join-Path $env:LOCALAPPDATA 'TokenToAPI Connect'
@@ -36,12 +45,13 @@ jobs:
           New-Item -ItemType Directory -Force $config | Out-Null
           $marker = Join-Path $config 'smoke-backup.txt'
           Set-Content $marker 'original settings preserved'
-          $install = Start-Process $installer -ArgumentList @('/S', "/D=$destination") -Wait -PassThru
+          $previous = (Get-ChildItem 'previous/*Windows-x64-setup.exe').FullName
+          $install = Start-Process $previous -ArgumentList @('/S', "/D=$destination") -Wait -PassThru
           if ($install.ExitCode -ne 0) { throw "Installer failed: $($install.ExitCode)" }
           $exe = Join-Path $destination 'tokentoapi-connect.exe'
           if (!(Test-Path $exe)) { throw "Installed executable missing" }
           $version = (Get-Item $exe).VersionInfo.ProductVersion
-          if ($version -ne $env:RELEASE_TAG.Substring(1)) { throw "Wrong executable version: $version" }
+          if ($version -ne $env:PREVIOUS_TAG.Substring(1)) { throw "Wrong executable version: $version" }
           $app = Start-Process $exe -PassThru
           Start-Sleep 10
           $app.Refresh()
@@ -51,9 +61,10 @@ jobs:
           $upgrade = Start-Process $installer -ArgumentList @('/S', '/UPDATE') -Wait -PassThru
           if ($upgrade.ExitCode -ne 0) { throw "Update installer failed" }
           if ((Get-Content $marker -Raw).Trim() -ne 'original settings preserved') { throw "Settings changed" }
+          if ((Get-Item $exe).VersionInfo.ProductVersion -ne $env:RELEASE_TAG.Substring(1)) { throw "Upgrade version mismatch" }
           $app = Start-Process $exe -PassThru
           Start-Sleep 10
           $app.Refresh()
           if ($app.HasExited -or $app.MainWindowHandle -eq 0) { throw "Updated app did not launch" }
           Stop-Process -Id $app.Id -Force
-          Write-Output "Installer, native launch, update-mode reinstall, and settings preservation passed."
+          Write-Output "Installer, native launch, version-to-version update, and settings preservation passed."

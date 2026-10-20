@@ -14,7 +14,7 @@ export function selectedOptions(
   if (client.startsWith("codex")) {
     return { ...DEFAULT_OPTIONS, webSearch: options.webSearch };
   }
-  if (client === "claude-desktop") return DEFAULT_OPTIONS;
+  if ((client === "claude-desktop" || client === "grok")) return DEFAULT_OPTIONS;
   return {
     ...options,
     webSearch: "preserve",

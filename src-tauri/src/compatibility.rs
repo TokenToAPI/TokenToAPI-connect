@@ -63,6 +63,7 @@ fn executable(paths: &Paths, name: &str) -> Option<PathBuf> {
         .map(|p| std::env::split_paths(&p).collect())
         .unwrap_or_default();
     roots.push(paths.home.join(".local/bin"));
+    roots.push(paths.home.join(".grok/bin"));
     #[cfg(not(windows))]
     roots.extend([
         PathBuf::from("/opt/homebrew/bin"),
@@ -206,11 +207,13 @@ pub fn inspect(paths: &Paths, client: Client) -> Compatibility {
     }
     let mut result = Compatibility::default();
     match client {
-        Client::Claude | Client::Codex => {
+        Client::Claude | Client::Codex | Client::Grok => {
             if let Some(path) = executable(
                 paths,
                 if client == Client::Claude {
                     "claude"
+                } else if client == Client::Grok {
+                    "grok"
                 } else {
                     "codex"
                 },
@@ -359,6 +362,7 @@ pub fn inspect(paths: &Paths, client: Client) -> Compatibility {
 
 pub fn next_steps(client: Client) -> Vec<String> {
     match client {
+        Client::Grok => vec!["Restart Grok CLI, run grok models, and confirm the selected TokenToAPI models.".into(), "Start a new session with grok. Command-line flags, environment overrides and organization policies can override local settings.".into()],
         Client::ClaudeDesktop => vec![
             if cfg!(windows) {
                 "Quit Claude from the system tray and reopen it; closing the window alone may leave it running in the background.".into()

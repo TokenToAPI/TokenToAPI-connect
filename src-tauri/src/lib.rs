@@ -3,6 +3,7 @@ mod claude_config;
 mod codex_context;
 pub mod compatibility;
 pub mod desktop_config;
+mod grok_config;
 pub mod handoff;
 pub mod models;
 #[allow(dead_code)]

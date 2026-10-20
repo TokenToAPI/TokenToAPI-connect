@@ -37,6 +37,7 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
     }
     let mut changes = Vec::new();
     match input.client {
+        Client::Grok => changes.push(crate::grok_config::change(paths, &input)?),
         Client::ClaudeDesktop => changes.extend(crate::desktop_config::changes(paths, &input)?),
         Client::Claude | Client::ClaudeVscode => {
             let kind = FileKind::ClaudeSettings;

@@ -78,7 +78,7 @@ function BrandIcon({ className = "" }: { className?: string }) {
   );
 }
 function ClientIcon({ client, size = 24 }: { client: Client; size?: number }) {
-  return clientFamily(client) === "codex" ? (
+  return clientFamily(client) !== "claude" ? (
     <Terminal size={size} strokeWidth={1.6} />
   ) : (
     <svg
@@ -787,7 +787,7 @@ export default function App() {
                             changeClient(
                               item.id === "codex"
                                 ? "codex-desktop"
-                                : "claude-desktop",
+                                : item.id === "grok" ? "grok" : "claude-desktop",
                             )
                           }
                           value={item.id}
@@ -1085,7 +1085,7 @@ export default function App() {
                   </div>
                   <p className="fine-print">
                     The model list comes from this key; requests require the gateway to support the{" "}
-                    {family === "codex" ? "Responses" : "Messages"} API.
+                    {family !== "claude" ? "Responses" : "Messages"} API.
                   </p>
                   {selection.ids.length > 0 && (
                     <SetupOptionsPanel

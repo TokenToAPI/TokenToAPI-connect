@@ -26,3 +26,19 @@ ID-only model discovery now inherits verified image support for the seven bundle
 ## v0.1.7 complete-catalog follow-up
 
 Capability handling is independent of a fixed list of model names: flat, nested provider, and native metadata work for aliases, verified bundled records cover 24 models, and the native cache fills gaps for newer names. Explicit gateway limits win. Missing or malformed capabilities produce a named warning; an unknown upstream is never assumed to support pictures. The live GPT catalog and the complete fallback matrix are covered in [VERIFICATION.md](VERIFICATION.md).
+
+## Grok CLI and model routing (v0.1.9)
+
+The official Grok Build CLI uses a separate TOML adapter, gateway-bound model
+credentials, and selected-only model aliases. Context capacity is required from
+the gateway; supported reasoning choices are translated into Grok's model menu.
+Unrelated settings, permissions and MCP configuration are preserved. Generated
+entries have an ownership marker, and collisions with unmanaged entries fail
+without writes. Configuration and backups use private file permissions.
+
+The adapter follows the official [custom models documentation](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/11-custom-models.md).
+Native verification uses Grok 1.0.62 on macOS with a loopback gateway and fake
+credentials. This validates client configuration and wire behavior, not paid
+upstream inference. Native Grok on Windows is not independently exercised.
+Command-line flags, environment overlays and managed organization policies may
+still override local configuration.
