@@ -7,7 +7,9 @@ on:
         required: true
         default: v0.1.8
 permissions:
-  contents: read
+  # GitHub requires write access to read draft releases. This workflow never
+  # writes release metadata and has no access to the updater signing key.
+  contents: write
 jobs:
   installer:
     runs-on: windows-latest
