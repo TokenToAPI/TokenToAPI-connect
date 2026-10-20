@@ -120,6 +120,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.6-sol": {
+    "input_modalities": ["text", "image"],
     "default": "low",
     "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
     "context_window": 272000,
@@ -128,6 +129,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.6-terra": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
     "context_window": 272000,
@@ -136,6 +138,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-6-astra": {
+    "input_modalities": ["text", "image"],
     "default": "low",
     "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
     "multi_agent_reasoning_effort": "xhigh",
@@ -145,6 +148,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-6.1-sol": {
+    "input_modalities": ["text", "image"],
     "default": "low",
     "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
     "multi_agent_reasoning_effort": "xhigh",
@@ -154,6 +158,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-6-sol": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh", "max", "ultra"],
     "context_window": 272000,
@@ -162,6 +167,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-6-luna": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh", "max"],
     "context_window": 272000,
@@ -170,6 +176,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.6-luna": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh", "max"],
     "context_window": 272000,

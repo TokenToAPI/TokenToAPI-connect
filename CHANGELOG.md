@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.6 - 2026-10-20
+
+- Fixed image attachments being disabled for verified GPT-6.x and GPT-5.6 native models when `/v1/models` returns model IDs without capability metadata. Explicit gateway modalities still take precedence; unknown models keep the text-only fallback.
+- Existing imports need to be imported again with the fixed Connect build, followed by fully quitting and reopening Codex.
+- Filter unsupported, malformed, and duplicate gateway modalities so audio/video metadata cannot prevent Codex from loading the selected chat catalog.
+- Fixed the native image regression harness to execute URL and local-file image turns, verify model-specific context and reasoning behavior, and repair an old text-only catalog during reimport.
+
 ## v0.1.5 - 2026-10-19
 
 - Bind Codex API credentials to the selected provider without replacing `auth.json` or keyring login preferences; preserve or explicitly choose web search behavior.

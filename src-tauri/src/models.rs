@@ -335,13 +335,23 @@ fn normalize_catalog_shape(row: &mut Value) {
     if row["effective_context_window_percent"].is_null() {
         row["effective_context_window_percent"] = json!(95);
     }
-    if !row.get("input_modalities").is_some_and(|value| {
-        value.as_array().is_some_and(|items| {
-            !items.is_empty() && items.iter().all(|item| item.as_str().is_some())
-        })
-    }) {
-        row["input_modalities"] = json!(["text"]);
+    // Codex accepts only these enum values. Other gateway modalities (such as
+    // audio/video) must not make the entire imported catalog fail to load.
+    let mut modalities = Vec::new();
+    if let Some(items) = row["input_modalities"].as_array() {
+        for item in items {
+            if let Some(value @ ("text" | "image")) = item.as_str() {
+                if !modalities.contains(&value) {
+                    modalities.push(value);
+                }
+            }
+        }
     }
+    row["input_modalities"] = if modalities.is_empty() {
+        json!(["text"])
+    } else {
+        json!(modalities)
+    };
 }
 
 pub async fn discover(input: DiscoveryInput) -> Result<DiscoveredModels, String> {
@@ -513,6 +523,12 @@ pub fn build_codex_catalog(payload: &Value, selected: &[String]) -> Result<Strin
             let profile = model_profile(&profiles, id);
             context_sources[id] = json!(if profile.is_some() { "bundled" } else { "unknown" });
             if let Some(profile) = profile {
+                // Standard /v1/models lists often contain IDs only. Preserve
+                // verified native image capabilities; explicit gateway fields
+                // below still take precedence over this bundled fallback.
+                if let Some(modalities) = profile.get("input_modalities") {
+                    row["input_modalities"] = modalities.clone();
+                }
                 for key in crate::codex_context::FIELDS {
                     row[key] = profile[key].clone();
                 }

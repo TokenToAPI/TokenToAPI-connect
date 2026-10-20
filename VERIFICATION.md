@@ -1,3 +1,31 @@
+# v0.1.6 verification
+
+Release validation completed on 2026-10-20.
+
+## Automated checks
+
+- 90 Rust unit/integration tests passed on macOS arm64, including ID-only vision discovery, case-insensitive profile matching, explicit gateway text-only precedence, and unsupported/duplicate modality filtering.
+- Desktop Clippy with warnings denied, formatting, TypeScript, 15 frontend tests, 3 lifecycle tests, and the production web build passed.
+- Real Codex `0.162.1` passed six isolated scenarios against a loopback-only fake gateway: provider credentials and restore, numeric thinking levels, legacy 32K repair, partial gateway metadata, explicit vision metadata, and ID-only Astra vision fallback.
+- Both vision scenarios sent URL and local-file PNG inputs through Codex and verified `input_image` in the outgoing Responses requests. Reimport repaired a deliberately stale text-only catalog, subsequent reimport was stable, and the original configuration/authentication files restored exactly.
+- The prior image harness entered its runtime block only for `runtime=True`, so the v0.1.5 vision case checked catalog import/restore without executing image turns. v0.1.6 corrects that guard, the catalog slug lookup, and model-specific context/reasoning expectations. Earlier image-runtime claims should be read with this correction.
+- No real provider inference calls were made and no real user configuration was changed. The affected customer's installation has not been tested directly.
+
+## Package validation
+
+- macOS arm64 package built natively with app version `0.1.6`, macOS 12.0 minimum, registered import protocol, strict ad-hoc signature validation, and ZIP integrity checks.
+- Windows x64 portable package cross-compiled on macOS with `cargo-xwin`; PE architecture, GUI subsystem, non-elevated execution, static runtime dependencies, and ZIP integrity checks passed. No native Windows launch/runtime test is claimed. MSVC's absent debug-symbol files emitted linker warnings; both optimized binaries linked successfully.
+- Neither package is publisher-signed; the Mac app is ad-hoc signed and not notarized.
+
+```text
+30903249fcd9847623b3be910c18d09593f8c126ea8d40b36468aad086dad862  TokenToAPI-Connect-0.1.6-Windows-x64-portable.zip
+5b30b619ae09edd584a16c4632a4e2b6079872df4ef2781a6da5d212c0768a3e  TokenToAPI-Connect-0.1.6-macOS-arm64.zip
+```
+
+Existing users must install v0.1.6, fetch their models again, click **Import**, then fully quit and reopen Codex. Updating Connect alone does not rewrite an existing model catalog. Explicit gateway capability limits remain authoritative.
+
+No GitHub workflow is part of this release process.
+
 # v0.1.5 verification
 
 Reviewed the upstream SuperGPT Connect v0.1.6 compatibility release on 2026-10-19. The matching issues, fixes, and deliberately unsupported MCP Tool Search inference are documented in [COMPATIBILITY.md](COMPATIBILITY.md).

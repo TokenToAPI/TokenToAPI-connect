@@ -18,3 +18,7 @@ Reviewed on 2026-10-19 against the SuperGPT Connect v0.1.6 release notes and com
 | MCP Tool Search auto-detection | Not established. SuperGPT reports a proprietary, per-route capability endpoint and service-side measurements. No equivalent TokenToAPI capability contract was found in this review. | Not copied or auto-enabled. This is a gateway capability question, not safe to infer from model discovery or successful authentication. | No service-level capability claim is made. |
 
 The installed Claude Code on the development Mac is 2.1.88, below the custom-model-picker floor. Configuration generation is covered by tests, but no live Claude Code gateway conversation is claimed for v0.1.5. Windows configuration behavior is covered by platform-path tests and cross-compilation only unless a native Windows run is recorded in [VERIFICATION.md](VERIFICATION.md).
+
+## v0.1.6 image-input follow-up
+
+ID-only model discovery now inherits verified image support for the seven bundled GPT-6.x/GPT-5.6 native models. Explicit gateway modalities still take precedence; unsupported and duplicate modalities are filtered before writing Codex descriptors. Reimport with v0.1.6 repairs an older generated text-only catalog. Native Codex 0.162.1 tests now execute URL and local-file image turns for both explicit metadata and ID-only Astra fallback; the prior vision harness did not enter its runtime branch. See [verification](VERIFICATION.md) and the [recovery guide](docs/testing/codex-image-input.md).

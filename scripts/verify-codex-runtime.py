@@ -274,6 +274,8 @@ def run_case(
     selected_models=None,
     plain_payload=None,
     numeric=False,
+    expected_runtime_window=475000,
+    expected_wire_effort="xhigh",
 ):
     home = temporary / (label + " Unicode User")
     home.mkdir()
@@ -306,6 +308,12 @@ def run_case(
     gateway.model_requests = []
     run_fixture(fixture, request_path, specification)
 
+    if vision:
+        stale = json.loads(catalog_path.read_text(encoding="utf-8"))
+        stale["models"][0]["input_modalities"] = ["text"]
+        catalog_path.write_text(json.dumps(stale), encoding="utf-8")
+        run_fixture(fixture, request_path, specification)
+
     if legacy:
         old = json.loads(catalog_path.read_text(encoding="utf-8"))
         old.pop("_tokentoapi_connect", None)
@@ -333,7 +341,7 @@ def run_case(
         assert row["effective_context_window_percent"] == 90
 
     case = {"name": label, "passed": False, "models": []}
-    if runtime:
+    if runtime or vision:
         client = Codex(binary, home)
         try:
             listed = client.rpc("model/list", {"includeHidden": True, "limit": 100})["data"]
@@ -349,10 +357,10 @@ def run_case(
             before = len(gateway.requests)
             selected_effort = "4096" if numeric else "ultra"
             context_window = client.turn(thread, model, selected_effort)
-            expected_window = 121600 if numeric else 450000 if repair else 475000
+            expected_window = 121600 if numeric else 450000 if repair else expected_runtime_window
             assert context_window == expected_window, (context_window, expected_window)
             first_request = gateway.requests[before:]
-            expected_request_effort = 4096 if numeric else "xhigh"
+            expected_request_effort = 4096 if numeric else expected_wire_effort
             assert len(first_request) == 1 and first_request[0]["model"] == model
             assert first_request[0]["reasoning"]["effort"] == expected_request_effort, first_request
             case["models"].append({"id": model, "context_window": context_window, "request_effort": expected_request_effort})
@@ -371,8 +379,8 @@ def run_case(
                 assert len(compactions) == 1, f"expected one compaction event, found {len(compactions)}"
                 case.update(reported_usage=451000, compaction_events=len(compactions))
             if vision:
-                models_by_id = {row["id"]: row for row in catalog["models"]}
-                assert models_by_id["gpt-5.6-sol"]["input_modalities"] == ["text", "image"]
+                models_by_id = {row["slug"]: row for row in catalog["models"]}
+                assert models_by_id[model]["input_modalities"] == ["text", "image"]
                 assert models_by_id["text-only-alias"]["input_modalities"] == ["text"]
                 assert all("?client_version=0.162.0" in request for request in gateway.model_requests)
                 image_path = home / "image fixture.png"
@@ -467,8 +475,19 @@ def main():
             report["cases"].append(
                 run_case("vision-image-input", binary, fixture, temporary, args.output, gateway, endpoint,
                          vision, model="gpt-5.6-sol", vision=True,
+                         expected_runtime_window=258400,
+                         expected_wire_effort="max",
                          selected_models=["gpt-5.6-sol", "text-only-alias"],
                          plain_payload={"data": [{"id": "gpt-5.6-sol"}, {"id": "text-only-alias"}]})
+            )
+            id_only_vision = {"data": [
+                {"id": "gpt-6-astra"},
+                {"id": "text-only-alias", "context_window": 65536},
+            ]}
+            report["cases"].append(
+                run_case("astra-id-only-image-input", binary, fixture, temporary, args.output, gateway, endpoint,
+                         id_only_vision, model="gpt-6-astra", vision=True,
+                         selected_models=["gpt-6-astra", "text-only-alias"])
             )
             report["passed"] = True
         finally:

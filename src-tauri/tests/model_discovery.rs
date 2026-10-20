@@ -454,6 +454,61 @@ fn malformed_gateway_capacities_are_rejected_but_modalities_remain_sanitized() {
 }
 
 #[test]
+fn known_native_vision_models_keep_image_input_with_id_only_discovery() {
+    for id in [
+        "gpt-6-astra",
+        "GPT-6-Astra",
+        "gpt-6.1-sol",
+        "gpt-6-sol",
+        "gpt-6-luna",
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-5.6-luna",
+    ] {
+        let payload = serde_json::json!({"data":[{"id":id}]});
+        let generated = models::build_codex_catalog(&payload, &[id.into()]).unwrap();
+        let catalog: serde_json::Value = serde_json::from_str(&generated).unwrap();
+        assert_eq!(
+            catalog["models"][0]["input_modalities"],
+            serde_json::json!(["text", "image"]),
+            "{id}"
+        );
+    }
+}
+
+#[test]
+fn explicit_gateway_modalities_override_bundled_vision_support() {
+    let payload = serde_json::json!({"data":[{"id":"gpt-6-astra", "input_modalities":["text"]}]});
+    let generated = models::build_codex_catalog(&payload, &["gpt-6-astra".into()]).unwrap();
+    let catalog: serde_json::Value = serde_json::from_str(&generated).unwrap();
+    assert_eq!(
+        catalog["models"][0]["input_modalities"],
+        serde_json::json!(["text"])
+    );
+}
+
+#[test]
+fn unsupported_gateway_modalities_do_not_break_codex_catalogs() {
+    for (modalities, expected) in [
+        (
+            serde_json::json!(["text", "audio", "image", "image", 5]),
+            serde_json::json!(["text", "image"]),
+        ),
+        (
+            serde_json::json!(["audio", "video"]),
+            serde_json::json!(["text"]),
+        ),
+        (serde_json::json!([]), serde_json::json!(["text"])),
+    ] {
+        let payload =
+            serde_json::json!({"data":[{"id":"custom-a", "input_modalities":modalities}]});
+        let generated = models::build_codex_catalog(&payload, &["custom-a".into()]).unwrap();
+        let catalog: serde_json::Value = serde_json::from_str(&generated).unwrap();
+        assert_eq!(catalog["models"][0]["input_modalities"], expected);
+    }
+}
+
+#[test]
 fn slug_only_catalogs_do_not_imply_vision_or_large_context_support() {
     let payload = serde_json::json!({"models":[{"slug":"custom-a"}]});
     let generated = models::build_codex_catalog(&payload, &["custom-a".into()]).unwrap();
