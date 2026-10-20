@@ -22,3 +22,7 @@ The installed Claude Code on the development Mac is 2.1.88, below the custom-mod
 ## v0.1.6 image-input follow-up
 
 ID-only model discovery now inherits verified image support for the seven bundled GPT-6.x/GPT-5.6 native models. Explicit gateway modalities still take precedence; unsupported and duplicate modalities are filtered before writing Codex descriptors. Reimport with v0.1.6 repairs an older generated text-only catalog. Native Codex 0.162.1 tests now execute URL and local-file image turns for both explicit metadata and ID-only Astra fallback; the prior vision harness did not enter its runtime branch. See [verification](VERIFICATION.md) and the [recovery guide](docs/testing/codex-image-input.md).
+
+## v0.1.7 complete-catalog follow-up
+
+Capability handling is independent of a fixed list of model names: flat, nested provider, and native metadata work for aliases, verified bundled records cover 24 models, and the native cache fills gaps for newer names. Explicit gateway limits win. Missing or malformed capabilities produce a named warning; an unknown upstream is never assumed to support pictures. The live GPT catalog and the complete fallback matrix are covered in [VERIFICATION.md](VERIFICATION.md).

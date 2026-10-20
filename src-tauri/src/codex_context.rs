@@ -91,6 +91,7 @@ pub(crate) fn prepare_import(
         .map_err(|_| "The current model catalog is invalid; no configuration was written.")?;
     let cached: Option<Value> = cached.and_then(|text| serde_json::from_str(text).ok());
     let gateway_fields = catalog["_tokentoapi_connect"]["gateway_context_fields"].clone();
+    let mut modality_sources = catalog["_tokentoapi_connect"]["input_modality_sources"].clone();
     let mut generated_context = json!({});
     let rows = catalog["models"]
         .as_array_mut()
@@ -106,6 +107,25 @@ pub(crate) fn prepare_import(
                 .as_array()
                 .is_some_and(|fields| fields.iter().any(|field| field == key))
         };
+
+        // Native metadata can cover newer models without a Connect release.
+        // Never replace an explicit gateway limit or a verified bundled profile.
+        if modality_sources[&id] == "unknown" {
+            if let Some(items) = cached
+                .as_ref()
+                .and_then(|value| find_model(value, &id))
+                .and_then(|model| model["input_modalities"].as_array())
+            {
+                let modalities: Vec<_> = ["text", "image"]
+                    .into_iter()
+                    .filter(|modality| items.iter().any(|item| item == modality))
+                    .collect();
+                if !modalities.is_empty() {
+                    row["input_modalities"] = json!(modalities);
+                    modality_sources[&id] = json!("native-cache");
+                }
+            }
+        }
 
         if row["context_window"].is_null()
             && row["max_context_window"].is_null()
@@ -157,6 +177,7 @@ pub(crate) fn prepare_import(
 
     catalog["_tokentoapi_connect"]["schema_version"] = json!(1);
     catalog["_tokentoapi_connect"]["generated_context"] = generated_context;
+    catalog["_tokentoapi_connect"]["input_modality_sources"] = modality_sources;
     serde_json::to_string_pretty(&catalog)
         .map_err(|_| "Could not generate the model catalog.".into())
 }

@@ -26,3 +26,7 @@ Do not request or share `auth.json`, API keys, or a complete configuration conta
 Regression tests cover ID-only discovery for the seven verified native vision models, case-insensitive profile matching, and explicit gateway text-only precedence. Existing tests cover unknown-model fallback and malformed modality sanitization.
 
 Release validation passed 90 Rust tests and six native Codex 0.162.1 scenarios, including URL/local PNG sends for Astra with ID-only discovery, stale text-only catalog repair, repeated import stability, and exact restore. Mac and Windows packages were built; Windows was cross-compiled without a native Windows launch. See [VERIFICATION.md](../../VERIFICATION.md). The affected user's installation has not been tested directly.
+
+## v0.1.7 follow-up
+
+Use v0.1.7 for broader coverage. It adds the complete verified modality table, nested provider schemas, native-cache fallback, and explicit unknown-model warnings. The live GPT manifest already advertises images for all four exposed GPT models, so no API deployment was needed. Native Codex accepted URL/local images for all 22 verified vision fallbacks. Production inference was blocked by insufficient balance and remains unverified; see [the current validation record](../../VERIFICATION.md).

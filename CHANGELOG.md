@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.7 - 2026-10-20
+
+- Expand image capability coverage to 24 verified models, including GPT-5.5 and older Codex models; keep the two GPT-OSS models text-only.
+- Read standard nested provider and native modality formats for any model or alias, with explicit gateway limits taking precedence.
+- Use the native Codex model cache for newer models when the gateway and bundled profiles omit input capabilities.
+- Warn by model name when image support remains unverified instead of silently presenting fallback text-only input as a confirmed capability.
+- Audit the live production GPT catalog and test native URL/local-image sends for every verified vision fallback.
+
 ## v0.1.6 - 2026-10-20
 
 - Fixed image attachments being disabled for verified GPT-6.x and GPT-5.6 native models when `/v1/models` returns model IDs without capability metadata. Explicit gateway modalities still take precedence; unknown models keep the text-only fallback.

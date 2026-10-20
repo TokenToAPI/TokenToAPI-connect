@@ -1,3 +1,34 @@
+# v0.1.7 verification
+
+Release validation completed on 2026-10-20.
+
+## Capability coverage
+
+- Audited production account model mappings and active-key discovery without exporting credentials. The OpenAI groups expose the same four GPT models: GPT-5.5, GPT-5.6 Sol, GPT-5.6 Terra, and GPT-6 Astra. The live group-3 rich manifest advertises text/image input for all four; the plain list omits capability fields. Group 9 has the same allowlist but had no active key for a direct request. Claude-only group manifests remain text-only for native Codex and were not reclassified as image-capable Codex routes.
+- Captured only safe capability fields in `docs/testing/production-gpt-catalog.json`. A regression verifies that all four live GPT entries retain image support after import. No backend change or restart is needed for this catalog, which already returns correct rich metadata.
+- Verified 24 bundled capability declarations: 22 vision models and two text-only GPT-OSS models. Evidence comes from the installed Codex 0.162.1 native catalog and the provider registry already used by the gateway (`https://models.dev/api.json`). See `docs/testing/model-modality-evidence.json`. One legacy profile, `gpt-5-codex-mini`, had no verified modality record and therefore remains unverified rather than being guessed as vision-capable.
+- Any model or alias can declare capabilities using `input_modalities`, `modalities.input`, `architecture.input_modalities`, or native `inputModalities`. Explicit flat gateway metadata has precedence. The native Codex cache fills missing capabilities only when neither gateway nor bundled metadata declares them. Unknown or malformed capabilities produce a named warning in the import summary.
+
+## Automated checks
+
+- 95 Rust tests passed, including all declared fallback modalities, the production catalog, arbitrary aliases in four metadata formats, gateway text-only precedence, native-cache fallback, and unknown-capability warnings.
+- Desktop Clippy with warnings denied, formatting, TypeScript, 15 frontend tests, 3 lifecycle tests, and web production builds passed.
+- Real Codex 0.162.1 passed seven isolated loopback scenarios. The new matrix checks all 24 declared models and sends both URL and local-file PNG input for each of the 22 vision models (44 image turns). Existing provider-authentication, context, compaction, stale-catalog repair, Astra, explicit vision, and restore checks also pass.
+- Production image inference probes returned HTTP 403 `insufficient balance` before reaching the upstream. Consequently provider-side image acceptance has NOT been verified for the four live routes. No balances, customer settings, or service configuration were changed.
+
+## Packages
+
+- macOS arm64 built natively; version 0.1.7, macOS 12 minimum, protocol, architecture, strict ad-hoc signature, ZIP integrity, and SHA-256 passed.
+- Windows x64 cross-compiled on macOS; PE/GUI architecture, non-elevated execution, static runtime dependencies, ZIP integrity, and SHA-256 passed. No native Windows launch is claimed. The linker emitted warnings about absent MSVC debug-symbol files and successfully produced the optimized binaries.
+- Both packages remain unsigned by a publisher; macOS uses an ad-hoc signature and is not notarized.
+
+```text
+ef1650bc4ec5a67f6ef02d94c5bc8f1784bb52bfcb8afb35508ce3d5af38fda5  TokenToAPI-Connect-0.1.7-Windows-x64-portable.zip
+8f5a07967d00517678946a0dd29def442f484d2428162cecac436eabb2ed78d4  TokenToAPI-Connect-0.1.7-macOS-arm64.zip
+```
+
+Install v0.1.7, fetch models again, click **Import**, fully quit/reopen Codex, and start a new chat. Updating Connect alone does not refresh an existing catalog. This release removes known discovery/import gaps; it does not promise that an arbitrary upstream accepts images or override an explicitly text-only route.
+
 # v0.1.6 verification
 
 Release validation completed on 2026-10-20.

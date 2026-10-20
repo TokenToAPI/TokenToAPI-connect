@@ -1,0 +1,174 @@
+{
+  "verified_on": "2026-10-20",
+  "models": {
+    "gpt-5.3-codex": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5.4": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5.2-codex": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5.1-codex-max": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5.1-codex": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5.2": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5.1": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5-codex": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-oss-120b": {
+      "input_modalities": [
+        "text"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-oss-20b": {
+      "input_modalities": [
+        "text"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5.1-codex-mini": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5.5": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "gpt-5.4-mini": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "models.dev provider registry, 2026-10-20"
+    },
+    "gpt-5.6-sol": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "gpt-5.6-terra": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "gpt-6-astra": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "gpt-6.1-sol": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "gpt-6-sol": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "gpt-6-luna": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "gpt-5.6-luna": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "gpt-daybreak-blue-latest": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "gpt-daybreak-red-latest": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    },
+    "codex-auto-review": {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "source": "Codex 0.162.1 bundled catalog"
+    }
+  },
+  "unverified": [
+    "gpt-5-codex-mini"
+  ]
+}

@@ -1,5 +1,6 @@
 {
   "gpt-5.3-codex": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh"],
     "context_window": 272000,
@@ -8,6 +9,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.4": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh"],
     "context_window": 272000,
@@ -16,6 +18,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.2-codex": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh"],
     "context_window": 272000,
@@ -24,6 +27,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.1-codex-max": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh"],
     "context_window": 272000,
@@ -32,6 +36,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.1-codex": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high"],
     "context_window": 272000,
@@ -40,6 +45,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.2": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh"],
     "context_window": 272000,
@@ -48,6 +54,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.1": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high"],
     "context_window": 272000,
@@ -56,6 +63,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5-codex": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high"],
     "context_window": 272000,
@@ -64,6 +72,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["minimal", "low", "medium", "high"],
     "context_window": 272000,
@@ -72,6 +81,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-oss-120b": {
+    "input_modalities": ["text"],
     "default": "medium",
     "levels": ["low", "medium", "high"],
     "context_window": 128000,
@@ -80,6 +90,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-oss-20b": {
+    "input_modalities": ["text"],
     "default": "medium",
     "levels": ["low", "medium", "high"],
     "context_window": 128000,
@@ -88,6 +99,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.1-codex-mini": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["medium", "high"],
     "context_window": 272000,
@@ -104,6 +116,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.5": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh"],
     "context_window": 272000,
@@ -112,6 +125,7 @@
     "effective_context_window_percent": 95
   },
   "gpt-5.4-mini": {
+    "input_modalities": ["text", "image"],
     "default": "medium",
     "levels": ["low", "medium", "high", "xhigh"],
     "context_window": 272000,
@@ -183,5 +197,61 @@
     "max_context_window": 872000,
     "auto_compact_token_limit": null,
     "effective_context_window_percent": 95
+  },
+  "gpt-daybreak-blue-latest": {
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": null,
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "default": "low",
+    "levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra"
+    ]
+  },
+  "gpt-daybreak-red-latest": {
+    "context_window": 372000,
+    "max_context_window": 372000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": null,
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "default": "medium",
+    "levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "ultra"
+    ]
+  },
+  "codex-auto-review": {
+    "context_window": 272000,
+    "max_context_window": 872000,
+    "auto_compact_token_limit": null,
+    "effective_context_window_percent": null,
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "default": "medium",
+    "levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ]
   }
 }

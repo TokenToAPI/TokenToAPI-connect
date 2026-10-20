@@ -31,7 +31,7 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
     let resolved = paths.for_client(input.client)?;
     let paths = &resolved;
     let _lock = paths.lock()?;
-    let compatibility = crate::compatibility::inspect(paths, input.client);
+    let mut compatibility = crate::compatibility::inspect(paths, input.client);
     if let Some(blocked) = compatibility.blocked {
         return Err(blocked);
     }
@@ -180,6 +180,18 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
                     serde_json::from_str(&catalog).map_err(|_| {
                         "The generated model catalog is invalid; no configuration was written."
                     })?;
+                if let Some(sources) =
+                    catalog_json["_tokentoapi_connect"]["input_modality_sources"].as_object()
+                {
+                    let unknown: Vec<_> = sources
+                        .iter()
+                        .filter(|(_, source)| *source == "unknown" || *source == "gateway-invalid")
+                        .map(|(id, _)| id.as_str())
+                        .collect();
+                    if !unknown.is_empty() {
+                        compatibility.warnings.push(format!("Image support could not be verified for: {}. These models use text-only input until the gateway supplies input capabilities. Fetch models again after the gateway metadata is corrected, then import again.", unknown.join(", ")));
+                    }
+                }
                 if let Some(levels) = catalog_json["models"]
                     .as_array()
                     .and_then(|models| models.iter().find(|model| model["slug"] == input.model))

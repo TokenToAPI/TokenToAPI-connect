@@ -413,6 +413,48 @@ def run_case(
     return case
 
 
+def run_capability_matrix(binary, fixture, temporary, output, gateway, endpoint):
+    home = temporary / "capability-matrix"
+    home.mkdir()
+    (home / ".tokentoapi-codex-fixture").touch()
+    evidence = json.loads((ROOT / "docs/testing/model-modality-evidence.json").read_text())["models"]
+    selected = list(evidence)
+    gateway.manifest_payload = {"data": [{"id": name} for name in selected]}
+    gateway.plain_payload = gateway.manifest_payload
+    gateway.requests, gateway.usage = [], 100
+    gateway.model_requests = []
+    specification = {"home": str(home), "root": endpoint, "client": "codex-desktop",
+                     "selectedModels": selected, "defaultModel": "gpt-5.5"}
+    request_path = output / "capability-matrix.json"
+    run_fixture(fixture, request_path, specification)
+    image_path = home / "matrix.png"
+    image_path.write_bytes(base64.b64decode(IMAGE_URL.split(",", 1)[1]))
+    client = Codex(binary, home)
+    vision_count = 0
+    try:
+        listed = client.rpc("model/list", {"includeHidden": True, "limit": 100})["data"]
+        by_id = {row["model"]: row for row in listed}
+        for model, expected in evidence.items():
+            assert by_id[model]["inputModalities"] == expected["input_modalities"], model
+            if "image" not in expected["input_modalities"]:
+                continue
+            for image in [{"type": "image", "url": IMAGE_URL},
+                          {"type": "localImage", "path": str(image_path)}]:
+                thread = client.start(home, model)
+                before = len(gateway.requests)
+                client.turn(thread, model, image=image)
+                sent = gateway.requests[before:]
+                assert len(sent) == 1 and sent[0]["model"] == model, model
+                assert IMAGE_URL in json.dumps(sent[0].get("input", [])), model
+            vision_count += 1
+    finally:
+        client.close()
+    run_fixture(fixture, request_path, specification, restore=True)
+    assert not (home / ".codex/tokentoapi-models.json").exists()
+    return {"name": "full-capability-matrix", "passed": True, "models_checked": len(evidence),
+            "vision_models_sent": vision_count, "image_turns": vision_count * 2}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--codex", type=Path)
@@ -490,6 +532,7 @@ def main():
                          selected_models=["gpt-6-astra", "text-only-alias"])
             )
             report["passed"] = True
+            report["cases"].append(run_capability_matrix(binary, fixture, temporary, args.output, gateway, endpoint))
         finally:
             gateway.shutdown()
             gateway.server_close()

@@ -354,6 +354,18 @@ fn normalize_catalog_shape(row: &mut Value) {
     };
 }
 
+fn gateway_input_modalities(row: &Value) -> Option<&Value> {
+    [
+        row.get("input_modalities"),
+        row.pointer("/modalities/input"),
+        row.pointer("/architecture/input_modalities"),
+        row.get("inputModalities"),
+    ]
+    .into_iter()
+    .flatten()
+    .find(|value| !value.is_null())
+}
+
 pub async fn discover(input: DiscoveryInput) -> Result<DiscoveredModels, String> {
     let api_key = input.api_key.trim().to_string();
     if api_key.is_empty()
@@ -505,6 +517,7 @@ pub fn build_codex_catalog(payload: &Value, selected: &[String]) -> Result<Strin
         .map_err(|_| "The built-in Codex model profiles are unavailable.")?;
     let mut context_sources = json!({});
     let mut gateway_context_fields = json!({});
+    let mut input_modality_sources = json!({});
     let entries: Vec<Value> = selected
         .iter()
         .enumerate()
@@ -521,6 +534,7 @@ pub fn build_codex_catalog(payload: &Value, selected: &[String]) -> Result<Strin
             row["display_name"] = json!(id);
             row["description"] = json!(id);
             let profile = model_profile(&profiles, id);
+            input_modality_sources[id] = json!("unknown");
             context_sources[id] = json!(if profile.is_some() { "bundled" } else { "unknown" });
             if let Some(profile) = profile {
                 // Standard /v1/models lists often contain IDs only. Preserve
@@ -528,6 +542,7 @@ pub fn build_codex_catalog(payload: &Value, selected: &[String]) -> Result<Strin
                 // below still take precedence over this bundled fallback.
                 if let Some(modalities) = profile.get("input_modalities") {
                     row["input_modalities"] = modalities.clone();
+                    input_modality_sources[id] = json!("bundled");
                 }
                 for key in crate::codex_context::FIELDS {
                     row[key] = profile[key].clone();
@@ -565,6 +580,11 @@ pub fn build_codex_catalog(payload: &Value, selected: &[String]) -> Result<Strin
                 .is_some_and(|source| source.contains_key("supports_reasoning_summaries"));
             let mut context_fields = Vec::new();
             if let Some(original) = original {
+                if let Some(modalities) = gateway_input_modalities(&Value::Object(original.clone())) {
+                    row["input_modalities"] = modalities.clone();
+                    let usable = modalities.as_array().is_some_and(|items| items.iter().any(|item| matches!(item.as_str(), Some("text" | "image"))));
+                    input_modality_sources[id] = json!(if usable { "gateway" } else { "gateway-invalid" });
+                }
                 for key in CODEX_MODEL_METADATA_FIELDS {
                     if let Some(value) = original.get(*key).filter(|value| !value.is_null()) {
                         row[*key] = value.clone();
@@ -656,6 +676,7 @@ pub fn build_codex_catalog(payload: &Value, selected: &[String]) -> Result<Strin
     serde_json::to_string_pretty(&json!({
         "models":entries,
         "_tokentoapi_connect": {
+            "input_modality_sources": input_modality_sources,
             "context_sources": context_sources,
             "gateway_context_fields": gateway_context_fields
         }

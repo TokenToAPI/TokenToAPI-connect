@@ -454,6 +454,79 @@ fn malformed_gateway_capacities_are_rejected_but_modalities_remain_sanitized() {
 }
 
 #[test]
+fn production_gpt_catalog_keeps_every_advertised_image_capability() {
+    let payload: serde_json::Value = serde_json::from_str(include_str!(
+        "../../docs/testing/production-gpt-catalog.json"
+    ))
+    .unwrap();
+    let selected = models::catalog_models(&payload);
+    assert_eq!(selected.len(), 4);
+    let generated = models::build_codex_catalog(&payload, &selected).unwrap();
+    let catalog: serde_json::Value = serde_json::from_str(&generated).unwrap();
+    for model in catalog["models"].as_array().unwrap() {
+        assert_eq!(
+            model["input_modalities"],
+            serde_json::json!(["text", "image"]),
+            "{}",
+            model["slug"]
+        );
+    }
+}
+
+#[test]
+fn all_declared_model_capabilities_survive_id_only_discovery() {
+    let evidence: serde_json::Value = serde_json::from_str(include_str!(
+        "../../docs/testing/model-modality-evidence.json"
+    ))
+    .unwrap();
+    for (id, entry) in evidence["models"].as_object().unwrap() {
+        let generated = models::build_codex_catalog(
+            &serde_json::json!({"data":[{"id":id}]}),
+            std::slice::from_ref(id),
+        )
+        .unwrap();
+        let catalog: serde_json::Value = serde_json::from_str(&generated).unwrap();
+        assert_eq!(
+            catalog["models"][0]["input_modalities"], entry["input_modalities"],
+            "{id}"
+        );
+    }
+}
+
+#[test]
+fn generic_gateway_modality_formats_work_for_arbitrary_aliases() {
+    for fields in [
+        serde_json::json!({"input_modalities":["text","image"]}),
+        serde_json::json!({"modalities":{"input":["text","image","pdf"]}}),
+        serde_json::json!({"architecture":{"input_modalities":["text","image"]}}),
+        serde_json::json!({"inputModalities":["text","image"]}),
+    ] {
+        let mut row = fields;
+        row["id"] = serde_json::json!("future-provider/team-alias");
+        let generated = models::build_codex_catalog(
+            &serde_json::json!({"data":[row]}),
+            &["future-provider/team-alias".into()],
+        )
+        .unwrap();
+        let catalog: serde_json::Value = serde_json::from_str(&generated).unwrap();
+        assert_eq!(
+            catalog["models"][0]["input_modalities"],
+            serde_json::json!(["text", "image"])
+        );
+        assert_eq!(
+            catalog["_tokentoapi_connect"]["input_modality_sources"]["future-provider/team-alias"],
+            "gateway"
+        );
+    }
+    let generated=models::build_codex_catalog(&serde_json::json!({"data":[{"id":"gpt-5.5","input_modalities":["text"],"modalities":{"input":["text","image"]}}]}), &["gpt-5.5".into()]).unwrap();
+    let catalog: serde_json::Value = serde_json::from_str(&generated).unwrap();
+    assert_eq!(
+        catalog["models"][0]["input_modalities"],
+        serde_json::json!(["text"])
+    );
+}
+
+#[test]
 fn known_native_vision_models_keep_image_input_with_id_only_discovery() {
     for id in [
         "gpt-6-astra",

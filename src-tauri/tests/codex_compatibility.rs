@@ -29,6 +29,63 @@ fn catalog(paths: &Paths) -> Value {
 }
 
 #[test]
+fn native_cache_fills_new_model_modalities_but_gateway_limits_win() {
+    let home = tempfile::tempdir().unwrap();
+    let paths = Paths::for_home(home.path());
+    fs::create_dir_all(&paths.codex).unwrap();
+    fs::write(paths.codex.join("models_cache.json"), json!({"models":[{"slug":"future-vision","input_modalities":["text","image"],"context_window":128000}]}).to_string()).unwrap();
+    adapter::apply(
+        &paths,
+        input(
+            "future-vision",
+            json!({"context_window":128000}),
+            "https://gateway.example.test",
+        ),
+    )
+    .unwrap();
+    assert_eq!(
+        catalog(&paths)["models"][0]["input_modalities"],
+        json!(["text", "image"])
+    );
+    assert_eq!(
+        catalog(&paths)["_tokentoapi_connect"]["input_modality_sources"]["future-vision"],
+        "native-cache"
+    );
+    adapter::apply(
+        &paths,
+        input(
+            "future-vision",
+            json!({"context_window":128000,"input_modalities":["text"]}),
+            "https://gateway.example.test",
+        ),
+    )
+    .unwrap();
+    assert_eq!(
+        catalog(&paths)["models"][0]["input_modalities"],
+        json!(["text"])
+    );
+}
+
+#[test]
+fn missing_modality_metadata_is_reported_instead_of_silently_claiming_text_only_support() {
+    let home = tempfile::tempdir().unwrap();
+    let paths = Paths::for_home(home.path());
+    let result = adapter::apply(
+        &paths,
+        input(
+            "unknown-model",
+            json!({"context_window":128000}),
+            "https://gateway.example.test",
+        ),
+    )
+    .unwrap();
+    assert!(result
+        .warnings
+        .iter()
+        .any(|warning| warning.contains("Image support could not be verified for: unknown-model")));
+}
+
+#[test]
 fn known_profiles_preserve_user_context_reasoning_and_restore_exactly() {
     let home = tempfile::tempdir().unwrap();
     let paths = Paths::for_home(home.path());

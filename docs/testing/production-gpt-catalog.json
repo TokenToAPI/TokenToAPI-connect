@@ -1,0 +1,144 @@
+{
+  "data": [
+    {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "context_window": 272000,
+      "max_context_window": 272000,
+      "default_reasoning_level": "medium",
+      "supported_reasoning_levels": [
+        {
+          "effort": "low",
+          "description": "Fast responses with lighter reasoning"
+        },
+        {
+          "effort": "medium",
+          "description": "Balanced reasoning for most coding tasks"
+        },
+        {
+          "effort": "high",
+          "description": "Greater reasoning depth for coding and agent tasks"
+        },
+        {
+          "effort": "xhigh",
+          "description": "Extra-high reasoning depth for difficult tasks"
+        }
+      ],
+      "effective_context_window_percent": 95,
+      "id": "gpt-5.5"
+    },
+    {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "low",
+      "supported_reasoning_levels": [
+        {
+          "effort": "low",
+          "description": "Fast responses with lighter reasoning"
+        },
+        {
+          "effort": "medium",
+          "description": "Balanced reasoning for most coding tasks"
+        },
+        {
+          "effort": "high",
+          "description": "Greater reasoning depth for coding and agent tasks"
+        },
+        {
+          "effort": "xhigh",
+          "description": "Extra-high reasoning depth for difficult tasks"
+        },
+        {
+          "effort": "max",
+          "description": "Maximum reasoning depth for complex tasks"
+        },
+        {
+          "effort": "ultra",
+          "description": "Maximum reasoning with automatic task delegation"
+        }
+      ],
+      "effective_context_window_percent": 95,
+      "id": "gpt-5.6-sol"
+    },
+    {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "medium",
+      "supported_reasoning_levels": [
+        {
+          "effort": "low",
+          "description": "Fast responses with lighter reasoning"
+        },
+        {
+          "effort": "medium",
+          "description": "Balanced reasoning for most coding tasks"
+        },
+        {
+          "effort": "high",
+          "description": "Greater reasoning depth for coding and agent tasks"
+        },
+        {
+          "effort": "xhigh",
+          "description": "Extra-high reasoning depth for difficult tasks"
+        },
+        {
+          "effort": "max",
+          "description": "Maximum reasoning depth for complex tasks"
+        },
+        {
+          "effort": "ultra",
+          "description": "Maximum reasoning with automatic task delegation"
+        }
+      ],
+      "effective_context_window_percent": 95,
+      "id": "gpt-5.6-terra"
+    },
+    {
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "context_window": 1050000,
+      "max_context_window": 1050000,
+      "default_reasoning_level": "medium",
+      "supported_reasoning_levels": [
+        {
+          "effort": "low",
+          "description": "Fast responses with lighter reasoning"
+        },
+        {
+          "effort": "medium",
+          "description": "Balanced reasoning for most coding tasks"
+        },
+        {
+          "effort": "high",
+          "description": "Greater reasoning depth for coding and agent tasks"
+        },
+        {
+          "effort": "xhigh",
+          "description": "Extra-high reasoning depth for difficult tasks"
+        },
+        {
+          "effort": "max",
+          "description": "Maximum reasoning depth for complex tasks"
+        },
+        {
+          "effort": "ultra",
+          "description": "Maximum reasoning with automatic task delegation"
+        }
+      ],
+      "effective_context_window_percent": 95,
+      "id": "gpt-6-astra"
+    }
+  ]
+}
