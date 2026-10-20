@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.0.0 - 2026-10-20
+## v0.2.0 - 2026-10-20
 
 - Move themed update controls and status feedback to the bottom-right footer.
 - Add native update menu commands on macOS and Windows with shared busy-state protection.

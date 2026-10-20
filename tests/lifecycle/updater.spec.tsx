@@ -93,7 +93,7 @@ it("native menu uses the same checker and respects import/install locks", async 
   expect(mocks.check).toHaveBeenCalledTimes(1);
   await render(false);
   let finish!: () => void;
-  mocks.check.mockResolvedValue({version: "2.0.0", close: vi.fn(), downloadAndInstall: vi.fn(() => new Promise<void>(resolve => { finish = resolve; }))});
+  mocks.check.mockResolvedValue({version: "0.2.0", close: vi.fn(), downloadAndInstall: vi.fn(() => new Promise<void>(resolve => { finish = resolve; }))});
   await act(async () => menu());
   await click("Update and restart");
   await act(async () => menu());

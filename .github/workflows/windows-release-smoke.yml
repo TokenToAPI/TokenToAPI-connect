@@ -5,7 +5,7 @@ on:
       tag:
         description: Published or draft release tag to test
         required: true
-        default: v2.0.0
+        default: v0.2.0
       previous_tag:
         description: Previous stable version to upgrade from
         required: true
