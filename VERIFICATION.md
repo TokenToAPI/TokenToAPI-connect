@@ -1,10 +1,10 @@
-# v0.1.10 verification
+# v2.0.0 verification
 
 - 96 core Rust tests, 17 frontend tests and 10 lifecycle tests passed. New coverage checks native-menu events, busy/install guards, duplicate checks and listener cleanup.
 - TypeScript, desktop Clippy with warnings denied, formatting and production builds passed.
 - Light/dark footer appearance and client order were inspected. The actual packaged macOS app's **TokenToAPI Connect → Check for updates…** command displayed **You’re up to date.** in the footer.
 - All seven native Codex 0.162.1 regression scenarios passed, including image-input capabilities and URL/local-image requests. Tests used isolated configuration and a loopback gateway.
-- Actual v0.1.9 macOS bundle → network check → signed download → v0.1.10 installation passed, preserving a configuration sentinel. Both platform signatures passed; corrupt packages, substituted versions and downgrades were rejected.
+- Actual v0.1.9 macOS bundle → network check → signed download → v2.0.0 installation passed, preserving a configuration sentinel. Both platform signatures passed; corrupt packages, substituted versions and downgrades were rejected.
 - Windows installer/menu smoke and post-publication endpoint checks are recorded below after release validation.
 
 No customer API keys were used. macOS remains ad-hoc signed/unnotarized and Windows is not publisher-signed. Native Windows UI feedback is covered by component tests; the Windows smoke test checks native menu dispatch and app survival.
