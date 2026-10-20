@@ -5,7 +5,9 @@
 - Light/dark footer appearance and client order were inspected. The actual packaged macOS app's **TokenToAPI Connect → Check for updates…** command displayed **You’re up to date.** in the footer.
 - All seven native Codex 0.162.1 regression scenarios passed, including image-input capabilities and URL/local-image requests. Tests used isolated configuration and a loopback gateway.
 - Actual v0.1.9 macOS bundle → network check → signed download → v0.2.0 installation passed, preserving a configuration sentinel. Both platform signatures passed; corrupt packages, substituted versions and downgrades were rejected.
-- Windows installer/menu smoke and post-publication endpoint checks are recorded below after release validation.
+- Native Windows v0.1.9 installation → v0.2.0 upgrade/relaunch, settings preservation and Help-menu update dispatch passed: [run 39437424439](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/39437424439).
+- After publication, the real GitHub updater endpoint offered v0.2.0 to v0.1.9, and the downloaded macOS package passed signature verification. All nine published asset digests matched local files.
+- The production Import to Connect resolver selected the v0.2.0 macOS ZIP and Windows setup installer, both HTTP 200. Live `KeysView-D9PCN1jz.js` contains the latest-release lookup and installer preference, with no pinned v0.1.3 download URL. No platform deployment was needed; its existing resolver follows the latest stable release.
 
 No customer API keys were used. macOS remains ad-hoc signed/unnotarized and Windows is not publisher-signed. Native Windows UI feedback is covered by component tests; the Windows smoke test checks native menu dispatch and app survival.
 
