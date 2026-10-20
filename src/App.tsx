@@ -493,7 +493,7 @@ export default function App() {
       <header className="app-header">
         <div className="brand">
           <BrandIcon />
-          <span className="brand-wordmark">tokentoapi</span>
+          <span className="brand-wordmark">TokenToAPI</span>
           <span className="brand-divider" />
           <span className="brand-product">Connect</span>
         </div>
@@ -1230,12 +1230,14 @@ export default function App() {
           </span>
         </div>
       </div>
-      <UpdatePanel busy={disabled} onInstalling={setInstallingUpdate} />
       <footer className="app-footer">
-        <span>TokenToAPI Connect</span>
-        <button onClick={() => setAbout(true)} className="version-button">
-          v{version} <span>·</span> About
-        </button>
+        <div className="footer-meta">
+          <span>TokenToAPI Connect</span>
+          <button onClick={() => setAbout(true)} className="version-button">
+            v{version} <span>·</span> About
+          </button>
+        </div>
+        <UpdatePanel busy={disabled} onInstalling={setInstallingUpdate} />
       </footer>
       {editing !== undefined && (
         <StationEditor

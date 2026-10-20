@@ -1,7 +1,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ check: vi.fn(), relaunch: vi.fn() }));
+const mocks = vi.hoisted(() => ({ check: vi.fn(), relaunch: vi.fn(), listen: vi.fn(), unlisten: vi.fn() }));
+vi.mock("@tauri-apps/api/event", () => ({ listen: mocks.listen }));
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: mocks.check }));
 vi.mock("@tauri-apps/plugin-process", () => ({ relaunch: mocks.relaunch }));
 vi.mock("../../src/native", () => ({ nativeAvailable: true }));
@@ -18,6 +19,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
   mocks.relaunch.mockResolvedValue(undefined);
+  mocks.listen.mockResolvedValue(mocks.unlisten);
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.useRealTimers(); });
@@ -76,4 +78,37 @@ it("closes a late result after unmount", async () => {
   const close = vi.fn();
   await act(async () => finish({ close }));
   expect(close).toHaveBeenCalledTimes(1);
+});
+
+it("native menu uses the same checker and respects import/install locks", async () => {
+  mocks.check.mockResolvedValue(null);
+  await render();
+  expect(mocks.listen).toHaveBeenCalledWith("connect:check-for-updates", expect.any(Function));
+  const menu = mocks.listen.mock.calls[0][1];
+  await act(async () => menu());
+  expect(mocks.check).toHaveBeenCalledTimes(1);
+  expect(host.querySelector(".update-panel")?.getAttribute("data-feedback")).toBe("success");
+  await render(true);
+  await act(async () => menu());
+  expect(mocks.check).toHaveBeenCalledTimes(1);
+  await render(false);
+  let finish!: () => void;
+  mocks.check.mockResolvedValue({version: "0.1.10", close: vi.fn(), downloadAndInstall: vi.fn(() => new Promise<void>(resolve => { finish = resolve; }))});
+  await act(async () => menu());
+  await click("Update and restart");
+  await act(async () => menu());
+  expect(mocks.check).toHaveBeenCalledTimes(2);
+  expect(host.textContent).toContain("Downloading update");
+  await act(async () => finish());
+  await act(async () => menu());
+  expect(mocks.check).toHaveBeenCalledTimes(2);
+});
+it("removes native menu listeners, including a subscription completed after unmount", async () => {
+  let finish!: (stop: () => void) => void;
+  mocks.listen.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  await render();
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await act(async () => finish(mocks.unlisten));
+  expect(mocks.unlisten).toHaveBeenCalledTimes(1);
 });

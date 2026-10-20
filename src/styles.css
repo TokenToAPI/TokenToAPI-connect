@@ -744,6 +744,8 @@ strong {
   font-size: 10px;
   color: var(--muted);
 }
+.footer-meta { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.app-footer { gap: 16px; }
 .version-button {
   background: transparent;
   color: var(--muted);
@@ -1926,9 +1928,7 @@ strong {
 
 /* Give the model decision the full window; keep its import action in view. */
 .app-shell.client-step .page-intro,
-.app-shell.client-step .app-footer,
-.app-shell:has(.models-card) .page-intro,
-.app-shell:has(.models-card) .app-footer {
+.app-shell:has(.models-card) .page-intro {
   display: none;
 }
 .app-shell.client-step .workspace,
@@ -2032,6 +2032,50 @@ strong {
 .handoff-banner div { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .handoff-banner select { max-width: 220px; padding: 6px; border-radius: 6px; }
 
-.update-panel { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px; margin: 16px auto; max-width: 620px; font-size: 13px; }
-.update-panel button { padding: 8px 12px; border: 1px solid currentColor; border-radius: 8px; color: inherit; background: transparent; cursor: pointer; }
-.update-panel button:disabled { opacity: .5; cursor: default; }
+/* App updates share the same type, surfaces and teal accents as setup. */
+.update-panel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px 16px;
+  margin-left: auto;
+  min-width: 0;
+  flex: 1;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.update-status { display: none; align-items: center; gap: 7px; color: var(--muted); }
+.update-status.is-visible { display: inline-flex; }
+.update-status svg { flex-shrink: 0; color: var(--accent); }
+.update-panel[data-feedback="success"] .update-status { color: var(--teal); }
+.update-panel[data-feedback="error"] .update-status,
+.update-panel[data-feedback="error"] .update-status svg { color: var(--danger); }
+.update-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+.update-action svg { color: var(--accent); }
+.update-action:hover:not(:disabled) { color: var(--accent); background: var(--soft); border-color: var(--accent); }
+.update-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.update-action.is-primary { background: var(--soft); color: var(--accent); border-color: var(--accent); }
+.update-action:disabled { opacity: .55; cursor: default; }
+.update-spinner { animation: update-spin 1s linear infinite; }
+@keyframes update-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .update-spinner { animation: none; }
+  .update-action { transition: none; }
+}

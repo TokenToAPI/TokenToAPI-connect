@@ -1,6 +1,6 @@
 [package]
 name = "tokentoapi-connect"
-version = "0.1.9"
+version = "0.1.10"
 description = "A minimal Claude Code, Codex and Grok API configurator, based on CC Switch"
 edition = "2021"
 rust-version = "1.90"

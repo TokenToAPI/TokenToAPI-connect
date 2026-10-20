@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.10 - 2026-10-20
+
+- Move themed update controls and status feedback to the bottom-right footer.
+- Add native update menu commands on macOS and Windows with shared busy-state protection.
+- Correct TokenToAPI branding and order client cards as Codex, Claude, Grok.
+- Extend menu-event and updater lifecycle regression coverage.
+
 ## v0.1.9 - 2026-10-20
 
 - Add official Grok CLI setup, selected model routing, declared context and reasoning settings, and exact backup/restore.

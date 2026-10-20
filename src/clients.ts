@@ -1,9 +1,9 @@
 import type { Client } from "./native";
 
 export const families = [
-  { id: "grok", name: "Grok", maker: "xAI", hint: "Grok CLI · Terminal" },
   { id: "codex", name: "Codex", maker: "OpenAI", hint: "Desktop app · Terminal" },
   { id: "claude", name: "Claude", maker: "Anthropic", hint: "Desktop app · Claude Code" },
+  { id: "grok", name: "Grok", maker: "xAI", hint: "Grok CLI · Terminal" },
 ] as const;
 
 export const clients: { id: Client; name: string; label: string; hint: string }[] = [

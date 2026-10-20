@@ -1,6 +1,6 @@
 # App updates
 
-Connect 0.1.8 checks the latest stable GitHub release shortly after startup.
+Connect 0.1.8 and newer check the latest stable GitHub release shortly after startup.
 Checks time out after 15 seconds and never send gateway credentials. Startup
 network failures stay quiet; a manual check shows a retry message. Downloads
 and installation start only when the user clicks **Update and restart**.
@@ -17,6 +17,11 @@ manual ZIP. Install the app in a writable location, preferably Applications,
 before updating. Windows uses a per-user NSIS installer; an update from the
 portable edition installs a managed copy. Use its installed shortcut afterward
 and remove the obsolete portable folder when no longer needed.
+
+Manual checks are available in the bottom-right footer and in the native menu:
+**TokenToAPI Connect → Check for updates…** on macOS and
+**Help → Check for updates…** on Windows. Both use the same update flow and
+show status in the footer. Checks are locked during imports and installation.
 
 ## Publishing
 

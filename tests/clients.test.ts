@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clients, clientFamily, modelSelectable } from "../src/clients.ts";
+import { clients, families, clientFamily, modelSelectable } from "../src/clients.ts";
 
 test("desktop and CLI choices are distinct, and Claude defaults to its desktop entry", () => {
   assert.deepEqual(clients.filter(c => clientFamily(c.id) === "claude").map(c => c.id), ["claude-desktop", "claude", "claude-vscode"]);
@@ -30,3 +30,7 @@ test("dedicated media and embedding models are not selectable as chat models", (
  }
  assert.equal(modelSelectable("claude-desktop", "grok-4.7"), false);
  });
+
+test("client cards follow Codex, Claude, Grok reading order", () => {
+  assert.deepEqual(families.map(family => family.id), ["codex", "claude", "grok"]);
+});

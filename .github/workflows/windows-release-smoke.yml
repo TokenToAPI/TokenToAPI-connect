@@ -5,11 +5,11 @@ on:
       tag:
         description: Published or draft release tag to test
         required: true
-        default: v0.1.9
+        default: v0.1.10
       previous_tag:
         description: Previous stable version to upgrade from
         required: true
-        default: v0.1.8
+        default: v0.1.9
 permissions:
   # GitHub requires write access to read draft releases. This workflow never
   # writes release metadata and has no access to the updater signing key.
@@ -66,5 +66,36 @@ jobs:
           Start-Sleep 10
           $app.Refresh()
           if ($app.HasExited -or $app.MainWindowHandle -eq 0) { throw "Updated app did not launch" }
+          Add-Type @'
+          using System;
+          using System.Text;
+          using System.Runtime.InteropServices;
+          public static class NativeMenu {
+            [DllImport("user32.dll")] public static extern IntPtr GetMenu(IntPtr window);
+            [DllImport("user32.dll")] public static extern IntPtr GetSubMenu(IntPtr menu, int index);
+            [DllImport("user32.dll")] public static extern int GetMenuItemCount(IntPtr menu);
+            [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetMenuString(IntPtr menu, uint item, StringBuilder text, int size, uint flags);
+            [DllImport("user32.dll")] public static extern uint GetMenuItemID(IntPtr menu, int index);
+            [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
+          }
+          '@
+          $menu = [NativeMenu]::GetMenu($app.MainWindowHandle)
+          $found = $false
+          for ($i = 0; $i -lt [NativeMenu]::GetMenuItemCount($menu); $i++) {
+            $label = New-Object System.Text.StringBuilder 256
+            [void][NativeMenu]::GetMenuString($menu, $i, $label, 256, 0x400)
+            if ($label.ToString().Replace('&', '') -eq 'Help') {
+              $help = [NativeMenu]::GetSubMenu($menu, $i)
+              [void][NativeMenu]::GetMenuString($help, 0, $label.Clear(), 256, 0x400)
+              if ($label.ToString() -notlike 'Check for updates*') { throw "Update menu missing" }
+              $command = [NativeMenu]::GetMenuItemID($help, 0)
+              [void][NativeMenu]::SendMessage($app.MainWindowHandle, 0x111, [IntPtr]$command, [IntPtr]::Zero)
+              $found = $true
+            }
+          }
+          if (!$found) { throw "Help menu missing" }
+          Start-Sleep 3
+          $app.Refresh()
+          if ($app.HasExited) { throw "Native update menu caused app exit" }
           Stop-Process -Id $app.Id -Force
-          Write-Output "Installer, native launch, version-to-version update, and settings preservation passed."
+          Write-Output "Installer, native launch, version-to-version update, settings preservation, and native Help update command passed."

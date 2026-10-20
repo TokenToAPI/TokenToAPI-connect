@@ -300,6 +300,45 @@ mod desktop {
                 handoff: Mutex::new(handoff::HandoffState::default()),
             })
             .setup(|app| {
+                use tauri::menu::{Menu, MenuItem};
+                let menu = Menu::default(app.handle())?;
+                let check_updates = MenuItem::with_id(
+                    app,
+                    "check-for-updates",
+                    "Check for updates…",
+                    true,
+                    None::<&str>,
+                )?;
+                #[cfg(target_os = "macos")]
+                {
+                    let application = menu
+                        .items()?
+                        .into_iter()
+                        .next()
+                        .and_then(|item| item.as_submenu().cloned())
+                        .ok_or("The application menu is unavailable.")?;
+                    application.insert(&check_updates, 1)?;
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let help = menu
+                        .get(tauri::menu::HELP_SUBMENU_ID)
+                        .and_then(|item| item.as_submenu().cloned())
+                        .ok_or("The Help menu is unavailable.")?;
+                    help.insert(&check_updates, 0)?;
+                    help.insert(&tauri::menu::PredefinedMenuItem::separator(app)?, 1)?;
+                }
+                app.set_menu(menu)?;
+                app.on_menu_event(|app, event| {
+                    if event.id().as_ref() == "check-for-updates" {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                            let _ = window.emit("connect:check-for-updates", ());
+                        }
+                    }
+                });
                 #[cfg(any(windows, target_os = "linux"))]
                 app.deep_link().register_all()?;
                 let handle = app.handle().clone();
