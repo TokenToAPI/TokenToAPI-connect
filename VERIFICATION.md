@@ -5,7 +5,11 @@
 - Official Grok Build 1.0.62 (1474f9cbdd91), on macOS, accepted the generated configuration, exposed only the selected models, sent authenticated Responses requests using the original model IDs, switched models with a supported reasoning effort, and restored the original configuration. Tests used a temporary home and fake loopback credentials.
 - Native Codex 0.162.1 passed seven scenarios. The capability matrix covered 29 declarations, including four declared Grok vision models and one text-only Grok alias; 26 vision models sent 52 URL/local-file image turns. Grok declarations in this test are gateway fixtures, not a claim that every upstream Grok deployment supports images.
 - Platform handoff tests passed for new and old clients, Responses routes, Claude-only restrictions and duplicate prevention. The latest-release download resolver passed all 24 tests; frontend locale checks and production build passed.
-- macOS arm64 and Windows x64 packages were built. Final signed update, native Windows upgrade, and production-download results are recorded below once completed.
+- Signed macOS update tests passed: actual v0.1.8 app copy → network check → download → v0.1.9 install, unchanged configuration sentinel, valid sealed app and correct version. Both package signatures passed; tampering, substituted versions and downgrades were rejected.
+- Native Windows v0.1.8 install/launch → v0.1.9 upgrade/relaunch passed with settings preserved: [run 39429226752](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/39429226752).
+- After publication, the real GitHub `latest.json` endpoint offered v0.1.9 to the v0.1.8 updater and its downloaded macOS package passed signature verification. All nine published asset digests matched the local release files.
+- Production platform downloads resolved to v0.1.9 macOS ZIP and Windows setup installer, both HTTP 200. Public `KeysView-D9PCN1jz.js` contains the latest-release resolver and setup-installer preference, with no v0.1.3 download pin. Platform v0.2.17.3 deployment passed health/public-route checks.
+- Desktop Clippy with warnings denied, formatting, overlay checks, integration audit and upstream preview passed. The old-release upgrade uses the same public signing key shipped in v0.1.8; no customer configuration was changed.
 
 No customer API keys were used. Paid upstream inference and native Grok on Windows are not claimed by these tests. macOS remains ad-hoc signed/unnotarized and Windows is not publisher-signed.
 

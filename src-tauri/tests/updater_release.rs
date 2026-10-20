@@ -191,3 +191,31 @@ async fn previous_release_checks_downloads_and_installs_next_signed_version() {
         .unwrap();
     assert_eq!(String::from_utf8(actual.stdout).unwrap().trim(), version);
 }
+
+#[tokio::test]
+#[ignore = "run after publishing the release to verify the public updater endpoint"]
+async fn published_release_is_discoverable_and_signed() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
+    let config: Value =
+        serde_json::from_slice(&fs::read(root.join("src-tauri/tauri.conf.json")).unwrap()).unwrap();
+    let mut context = mock_context(noop_assets());
+    context.package_info_mut().version = "0.1.8".parse().unwrap();
+    context
+        .config_mut()
+        .plugins
+        .0
+        .insert("updater".into(), config["plugins"]["updater"].clone());
+    let app = mock_builder()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .build(context)
+        .unwrap();
+    let updater = app.updater_builder().build().unwrap();
+    let update = updater
+        .check()
+        .await
+        .unwrap()
+        .expect("public update must be offered to v0.1.8");
+    assert_eq!(update.version, env!("CARGO_PKG_VERSION"));
+    let bytes = update.download(|_, _| {}, || {}).await.unwrap();
+    update.verify(&bytes).unwrap();
+}
