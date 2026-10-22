@@ -5,11 +5,11 @@ on:
       tag:
         description: Published or draft release tag to test
         required: true
-        default: v0.2.0
+        default: v0.2.1
       previous_tag:
         description: Previous stable version to upgrade from
         required: true
-        default: v0.1.9
+        default: v0.2.0
 permissions:
   # GitHub requires write access to read draft releases. This workflow never
   # writes release metadata and has no access to the updater signing key.

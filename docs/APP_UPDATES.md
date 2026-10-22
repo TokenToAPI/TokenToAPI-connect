@@ -46,9 +46,27 @@ Losing the private key prevents trusted updates to existing installations.
    Dispatch **Windows release smoke test** for the draft tag.
 6. Verify uploaded bytes against checksums, then publish the release as latest.
    Confirm latest.json and both platform download URLs resolve publicly.
+   Verify the production platform download resolver selects the newly published
+   macOS ZIP and Windows setup installer, and both downloads return HTTP 200.
    Never publish a latest release without its manifest and both update packages.
 
 The signing key does not replace Apple notarization or Windows publisher signing.
+
+## Platform downloads follow the latest release
+
+The platform's **Import to Connect** dialog requests
+`https://api.github.com/repos/TokenToAPI/TokenToAPI-connect/releases/latest`
+each time it opens, with caching disabled. It resolves the uploaded
+`TokenToAPI-Connect-VERSION-macOS-arm64.zip` and
+`TokenToAPI-Connect-VERSION-Windows-x64-setup.exe` assets. The Windows installer
+takes precedence over the portable ZIP. If GitHub is unavailable or an asset
+is missing, the link falls back to the latest stable release page.
+
+Keep these asset names consistent, upload all packages before publication, and
+publish the stable release as **Latest**. Future releases then appear in the
+platform without a platform deployment or a version-specific download change.
+Drafts and prereleases are not offered. Always verify the deployed resolver
+and actual download URLs after publishing.
 
 ## Model refresh
 

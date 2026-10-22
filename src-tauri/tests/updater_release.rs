@@ -91,9 +91,9 @@ async fn previous_release_checks_downloads_and_installs_next_signed_version() {
     let config: Value =
         serde_json::from_slice(&fs::read(root.join("src-tauri/tauri.conf.json")).unwrap()).unwrap();
     let mut context = mock_context(noop_assets());
-    context.package_info_mut().version = "0.1.9".parse().unwrap();
+    context.package_info_mut().version = "0.2.0".parse().unwrap();
     let previous_config = Command::new("git")
-        .args(["show", "v0.1.9:src-tauri/tauri.conf.json"])
+        .args(["show", "v0.2.0:src-tauri/tauri.conf.json"])
         .current_dir(&root)
         .output()
         .unwrap();
@@ -115,7 +115,7 @@ async fn previous_release_checks_downloads_and_installs_next_signed_version() {
     let temporary = tempfile::tempdir().unwrap();
     assert!(Command::new("/usr/bin/tar")
         .args(["-xzf"])
-        .arg(root.join("release/TokenToAPI-Connect-0.1.9-macOS-arm64.app.tar.gz"))
+        .arg(root.join("release/TokenToAPI-Connect-0.2.0-macOS-arm64.app.tar.gz"))
         .arg("-C")
         .arg(temporary.path())
         .status()
@@ -165,8 +165,8 @@ async fn previous_release_checks_downloads_and_installs_next_signed_version() {
         .check()
         .await
         .unwrap()
-        .expect("v0.1.9 must see the new release");
-    assert_eq!(update.current_version, "0.1.9");
+        .expect("v0.2.0 must see the new release");
+    assert_eq!(update.current_version, "0.2.0");
     assert_eq!(update.version, version);
     let mut downloaded = 0;
     let bytes = update
@@ -199,7 +199,7 @@ async fn published_release_is_discoverable_and_signed() {
     let config: Value =
         serde_json::from_slice(&fs::read(root.join("src-tauri/tauri.conf.json")).unwrap()).unwrap();
     let mut context = mock_context(noop_assets());
-    context.package_info_mut().version = "0.1.9".parse().unwrap();
+    context.package_info_mut().version = "0.2.0".parse().unwrap();
     context
         .config_mut()
         .plugins
@@ -214,7 +214,7 @@ async fn published_release_is_discoverable_and_signed() {
         .check()
         .await
         .unwrap()
-        .expect("public update must be offered to v0.1.9");
+        .expect("public update must be offered to v0.2.0");
     assert_eq!(update.version, env!("CARGO_PKG_VERSION"));
     let bytes = update.download(|_, _| {}, || {}).await.unwrap();
     update.verify(&bytes).unwrap();

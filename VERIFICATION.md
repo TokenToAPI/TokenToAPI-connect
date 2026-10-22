@@ -1,3 +1,17 @@
+# v0.2.1 verification
+
+Validated on 2026-10-22 on macOS arm64 using Node.js 24.13.0, pnpm 10.28.0, and Rust 1.99.1. Native Windows checks ran on GitHub's Windows runner.
+
+- All 98 Rust unit/integration tests, 17 frontend tests, 10 lifecycle tests, TypeScript, production frontend build, Rust formatting, and desktop Clippy with warnings denied passed.
+- Claude Code coverage verifies Tool Search preservation, explicit enable/disable, VS Code environment-variable behavior, and exact restoration. The UI documents Claude Code 2.1.14+, gateway forwarding of `tool_reference` blocks, and ToolSearch permissions; no automatic gateway capability claim is made.
+- macOS arm64 and Windows x64 installer/portable packages were built with the existing updater signing key. Windows PE architecture, GUI subsystem, version, non-elevated execution, and static runtime dependency checks passed. Both ZIP integrity checks passed.
+- Both updater signatures passed the actual Tauri verifier. An isolated copy of the v0.2.0 macOS app checked a loopback endpoint, downloaded the signed v0.2.1 archive, and installed it while preserving a configuration sentinel. Strict app-signature verification and version checks passed afterward. Corrupt bytes, substituted versions, and downgrades were rejected.
+- The macOS ZIP and signed updater archive contain the same sealed app (all eight app files match).
+- Native Windows v0.2.0 installation → v0.2.1 upgrade/relaunch, settings preservation, and Help-menu update dispatch passed: [run 39810330317](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/39810330317).
+- All 24 platform handoff/download-resolver tests passed. The deployed `KeysView-Bx5tM5_q.js` uses GitHub's latest stable release API with caching disabled, prefers the Windows setup installer, and contains no pinned v0.1.3 download URL. No platform deployment is required for a new stable Connect release.
+
+No customer API keys or paid provider inference calls were used. A live Claude Code gateway conversation is not claimed. macOS remains ad-hoc signed/unnotarized; Windows is not publisher-signed. Missing MSVC debug-symbol files emitted linker warnings but did not prevent the optimized Windows build or native runtime checks.
+
 # v0.2.0 verification
 
 - 96 core Rust tests, 17 frontend tests and 10 lifecycle tests passed. New coverage checks native-menu events, busy/install guards, duplicate checks and listener cleanup.
@@ -10,19 +24,6 @@
 - The production Import to Connect resolver selected the v0.2.0 macOS ZIP and Windows setup installer, both HTTP 200. Live `KeysView-D9PCN1jz.js` contains the latest-release lookup and installer preference, with no pinned v0.1.3 download URL. No platform deployment was needed; its existing resolver follows the latest stable release.
 
 No customer API keys were used. macOS remains ad-hoc signed/unnotarized and Windows is not publisher-signed. Native Windows UI feedback is covered by component tests; the Windows smoke test checks native menu dispatch and app survival.
-
-# v0.2.1 verification
-
-Validation completed on 2026-10-22 on macOS arm64 with Node.js 22.23.3.
-
-- Rust formatting, all 98 Rust unit/integration tests, and desktop Clippy with warnings denied passed.
-- TypeScript, 17 frontend tests, 10 lifecycle tests, and the production web build passed.
-- New Claude Code coverage verifies Tool Search preserve, explicit enable/disable, VS Code environment-variable behavior, and exact restoration.
-- The UI states the Claude Code 2.1.14 minimum, required gateway forwarding of `tool_reference` blocks, ToolSearch permission requirement, and that route support cannot be detected automatically.
-- No paid provider inference calls were made. No native Windows run or live Claude Code gateway conversation is claimed for this release.
-- The signed macOS/Windows updater artifact test was not run because its release packages and signatures are not available. Package creation and publication are pending access to the existing Tauri signing key and the Windows NSIS packaging toolchain; no replacement key was generated.
-
-No GitHub workflow was run for this release.
 
 # v0.1.9 verification
 
