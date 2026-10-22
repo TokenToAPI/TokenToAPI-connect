@@ -9,6 +9,8 @@ Validated on 2026-10-22 on macOS arm64 using Node.js 24.13.0, pnpm 10.28.0, and 
 - The macOS ZIP and signed updater archive contain the same sealed app (all eight app files match).
 - Native Windows v0.2.0 installation → v0.2.1 upgrade/relaunch, settings preservation, and Help-menu update dispatch passed: [run 39810330317](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/39810330317).
 - All 24 platform handoff/download-resolver tests passed. The deployed `KeysView-Bx5tM5_q.js` uses GitHub's latest stable release API with caching disabled, prefers the Windows setup installer, and contains no pinned v0.1.3 download URL. No platform deployment is required for a new stable Connect release.
+- After publication, the real GitHub updater endpoint offered v0.2.1 to v0.2.0, and the downloaded macOS updater passed signature verification. All nine public release downloads matched their local SHA-256 hashes.
+- Executing the actual production `KeysView-Bx5tM5_q.js` download resolver selected the v0.2.1 macOS ZIP and Windows setup installer; both returned HTTP 200. The platform now follows the published release without a deployment.
 
 No customer API keys or paid provider inference calls were used. A live Claude Code gateway conversation is not claimed. macOS remains ad-hoc signed/unnotarized; Windows is not publisher-signed. Missing MSVC debug-symbol files emitted linker warnings but did not prevent the optimized Windows build or native runtime checks.
 
