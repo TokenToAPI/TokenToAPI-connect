@@ -11,6 +11,19 @@
 
 No customer API keys were used. macOS remains ad-hoc signed/unnotarized and Windows is not publisher-signed. Native Windows UI feedback is covered by component tests; the Windows smoke test checks native menu dispatch and app survival.
 
+# v0.2.1 verification
+
+Validation completed on 2026-10-22 on macOS arm64 with Node.js 22.23.3.
+
+- Rust formatting, all 98 Rust unit/integration tests, and desktop Clippy with warnings denied passed.
+- TypeScript, 17 frontend tests, 10 lifecycle tests, and the production web build passed.
+- New Claude Code coverage verifies Tool Search preserve, explicit enable/disable, VS Code environment-variable behavior, and exact restoration.
+- The UI states the Claude Code 2.1.14 minimum, required gateway forwarding of `tool_reference` blocks, ToolSearch permission requirement, and that route support cannot be detected automatically.
+- No paid provider inference calls were made. No native Windows run or live Claude Code gateway conversation is claimed for this release.
+- The signed macOS/Windows updater artifact test was not run because its release packages and signatures are not available. Package creation and publication are pending access to the existing Tauri signing key and the Windows NSIS packaging toolchain; no replacement key was generated.
+
+No GitHub workflow was run for this release.
+
 # v0.1.9 verification
 
 - 97 core Rust tests passed, including Grok import/reimport, unrelated settings preservation, exact restore, malformed TOML and missing-context rejection.

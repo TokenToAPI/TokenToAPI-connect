@@ -51,12 +51,18 @@ pub fn apply(paths: &Paths, input: ValidatedInput) -> Result<ImportResult, Strin
                     },
                     ClearScope {
                         parent: KeyPath::new(&["env"]),
-                        is_floor: if input.options.artifact_mode
-                            == crate::setup_options::ArtifactMode::Preserve
-                        {
-                            floor::claude_floor_env_preserving_artifact
-                        } else {
-                            floor::claude_floor_env
+                        is_floor: match (input.options.artifact_mode, input.options.tool_search) {
+                            (
+                                crate::setup_options::ArtifactMode::Preserve,
+                                crate::setup_options::ToolSearchMode::Preserve,
+                            ) => floor::claude_floor_env_preserving_artifact_and_tool_search,
+                            (crate::setup_options::ArtifactMode::Preserve, _) => {
+                                floor::claude_floor_env_preserving_artifact
+                            }
+                            (_, crate::setup_options::ToolSearchMode::Preserve) => {
+                                floor::claude_floor_env_preserving_tool_search
+                            }
+                            _ => floor::claude_floor_env,
                         },
                     },
                 ],

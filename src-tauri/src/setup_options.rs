@@ -22,6 +22,15 @@ pub enum WebSearchMode {
     Live,
 }
 
+#[derive(Clone, Copy, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ToolSearchMode {
+    #[default]
+    Preserve,
+    Disabled,
+    Enabled,
+}
+
 #[derive(Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SetupOptions {
@@ -31,6 +40,8 @@ pub struct SetupOptions {
     pub artifact_mode: ArtifactMode,
     #[serde(default)]
     pub web_search: WebSearchMode,
+    #[serde(default)]
+    pub tool_search: ToolSearchMode,
 }
 
 impl SetupOptions {
@@ -65,17 +76,23 @@ impl SetupOptions {
             }
         }
         if input.client.is_codex() {
-            if !self.claude_models.is_empty() || self.artifact_mode != ArtifactMode::Preserve {
+            if !self.claude_models.is_empty()
+                || self.artifact_mode != ArtifactMode::Preserve
+                || self.tool_search != ToolSearchMode::Preserve
+            {
                 return Err("Codex does not accept Claude-specific setup options.".into());
             }
         } else if self.web_search != WebSearchMode::Preserve {
             return Err("The web search option is only available for Codex.".into());
         }
         if matches!(input.client, Client::ClaudeDesktop | Client::Grok)
-            && (!self.claude_models.is_empty() || self.artifact_mode != ArtifactMode::Preserve)
+            && (!self.claude_models.is_empty()
+                || self.artifact_mode != ArtifactMode::Preserve
+                || self.tool_search != ToolSearchMode::Preserve)
         {
             return Err(
-                "This client does not use Claude Code purpose models or Artifact settings.".into(),
+                "This client does not use Claude Code purpose models, Artifact, or Tool Search settings."
+                    .into(),
             );
         }
         Ok(())

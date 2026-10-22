@@ -53,6 +53,7 @@ export interface SetupOptions {
   claudeModels: Partial<Record<"haiku" | "sonnet" | "opus" | "fable" | "subagent", string>>;
   artifactMode: "preserve" | "disabled" | "enabled";
   webSearch: "preserve" | "disabled" | "cached" | "live";
+  toolSearch: "preserve" | "disabled" | "enabled";
 }
 export function discoverModels(input: {
   client: Client;

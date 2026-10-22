@@ -4,6 +4,7 @@ export const DEFAULT_OPTIONS: SetupOptions = {
   claudeModels: {},
   artifactMode: "preserve",
   webSearch: "preserve",
+  toolSearch: "preserve",
 };
 
 export function selectedOptions(

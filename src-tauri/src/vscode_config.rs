@@ -91,11 +91,20 @@ pub fn change(paths: &Paths, input: &ValidatedInput) -> Result<Change, String> {
     }
     vars.retain(|v| {
         let name = v["name"].as_str().unwrap();
-        if input.options.artifact_mode == crate::setup_options::ArtifactMode::Preserve {
-            !provider_fields::claude_floor_env_preserving_artifact(name)
-        } else {
-            !provider_fields::claude_floor_env(name)
-        }
+        let is_floor = match (input.options.artifact_mode, input.options.tool_search) {
+            (
+                crate::setup_options::ArtifactMode::Preserve,
+                crate::setup_options::ToolSearchMode::Preserve,
+            ) => provider_fields::claude_floor_env_preserving_artifact_and_tool_search(name),
+            (crate::setup_options::ArtifactMode::Preserve, _) => {
+                provider_fields::claude_floor_env_preserving_artifact(name)
+            }
+            (_, crate::setup_options::ToolSearchMode::Preserve) => {
+                provider_fields::claude_floor_env_preserving_tool_search(name)
+            }
+            _ => provider_fields::claude_floor_env(name),
+        };
+        !is_floor
     });
     for (name, value) in crate::claude_config::environment(input) {
         vars.retain(|v| v["name"] != name);

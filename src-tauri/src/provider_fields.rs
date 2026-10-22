@@ -72,6 +72,14 @@ pub fn claude_floor_env_preserving_artifact(key: &str) -> bool {
     key != "CLAUDE_CODE_DISABLE_ARTIFACT" && claude_floor_env(key)
 }
 
+pub fn claude_floor_env_preserving_tool_search(key: &str) -> bool {
+    key != "ENABLE_TOOL_SEARCH" && claude_floor_env(key)
+}
+
+pub fn claude_floor_env_preserving_artifact_and_tool_search(key: &str) -> bool {
+    key != "CLAUDE_CODE_DISABLE_ARTIFACT" && key != "ENABLE_TOOL_SEARCH" && claude_floor_env(key)
+}
+
 /// Key fields at the top level of Claude Code `settings.json`.
 pub const CLAUDE_FLOOR_TOP: &[&str] = &[
     "apiKeyHelper",

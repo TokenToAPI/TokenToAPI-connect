@@ -53,6 +53,25 @@ export default function SetupOptionsPanel({
     <details className="setup-options">
       <summary>Advanced Claude Code settings</summary>
       <p>Auto uses the unique selected model from that family; otherwise it uses the default model.</p>
+      <label className="capability-setting">
+        <span>MCP Tool Search</span>
+        <select
+          aria-label="MCP Tool Search"
+          value={value.toolSearch}
+          disabled={disabled}
+          onChange={(event) =>
+            change({
+              ...value,
+              toolSearch: event.target.value as SetupOptions["toolSearch"],
+            })
+          }
+        >
+          <option value="preserve">Preserve existing setting</option>
+          <option value="disabled">Disable</option>
+          <option value="enabled">Enable</option>
+        </select>
+      </label>
+      <p>Requires Claude Code 2.1.14 or later, a gateway that forwards tool_reference blocks, and permission to use ToolSearch. Support cannot be detected automatically.</p>
       {roles.map(([role, label]) => (
         <label className="capability-setting" key={role}>
           <span>{label}</span>

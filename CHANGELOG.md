@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.1 - 2026-10-22
+
+- Preserve Claude Code MCP Tool Search settings by default and allow users to explicitly enable or disable the feature for Claude Code Terminal and VS Code.
+- Do not infer gateway support from model discovery; document the required Claude Code version, `tool_reference` forwarding, and ToolSearch permission.
+- Preserve Claude Desktop and Grok setup-option validation and all existing update, model-refresh, and restoration behavior.
+
 ## v0.2.0 - 2026-10-20
 
 - Move themed update controls and status feedback to the bottom-right footer.

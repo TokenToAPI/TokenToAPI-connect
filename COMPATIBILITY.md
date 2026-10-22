@@ -1,8 +1,8 @@
 # Client compatibility review
 
-Reviewed on 2026-10-19 against the SuperGPT Connect v0.1.6 release notes and compatibility matrix. This review covers local client configuration behavior; it does not imply that every gateway implements every protocol feature.
+Reviewed on 2026-10-22 against the SuperGPT Connect v0.1.6 release notes and compatibility matrix. This review covers local client configuration behavior; it does not imply that every gateway implements every protocol feature.
 
-| Upstream finding | Same risk in TokenToAPI Connect | v0.1.5 handling | Regression evidence |
+| Upstream finding | Same risk in TokenToAPI Connect | v0.2.1 handling | Regression evidence |
 | --- | --- | --- | --- |
 | Codex credentials replacing official login state | Yes. The previous import wrote credentials to shared Codex auth state. | Bind the Bearer key to the TokenToAPI provider and leave `auth.json` and keyring preferences intact. | `config_roundtrip`, `codex_compatibility`, and the real Codex profile/runtime fixture. |
 | Codex provider tables using reserved names | Yes. A pre-existing `openai`, `ollama`, or `lmstudio` table can shadow or conflict with generated providers. | Back up and remove conflicting reserved tables on import; restore the original bytes exactly. | `codex_reserved_provider_names_are_removed_and_restored_byte_for_byte`. |
@@ -15,9 +15,9 @@ Reviewed on 2026-10-19 against the SuperGPT Connect v0.1.6 release notes and com
 | Claude Desktop retains obsolete gateway fields or ambiguous profiles | Yes. Old local inference fields and duplicate profile IDs could make import ambiguous. | Remove only obsolete local gateway fields, preserve policy, and reject duplicate IDs before writing. | Claude Desktop round-trip and malformed-registry tests. |
 | Windows Claude Desktop configuration directory has a suffix | Yes. Choosing among several candidates could overwrite the wrong directory. | Prefer the exact path, accept a single configured suffixed path, and refuse ambiguous candidates. | Windows-path selection unit tests; native Windows runtime remains unverified for this release. |
 | Claude model picker minimum version | Yes. Older clients can accept configuration but cannot expose the same custom model menu. | Warn below Claude Code 2.1.242 using semantic version comparison. | Compatibility version unit tests. |
-| MCP Tool Search auto-detection | Not established. SuperGPT reports a proprietary, per-route capability endpoint and service-side measurements. No equivalent TokenToAPI capability contract was found in this review. | Not copied or auto-enabled. This is a gateway capability question, not safe to infer from model discovery or successful authentication. | No service-level capability claim is made. |
+| MCP Tool Search route support | Partially addressed. The upstream auto-detection endpoint is proprietary and has no verified TokenToAPI equivalent, so automatic route claims are unsafe. | Preserve the existing Claude Code setting by default; allow an explicit user override and state that route support must be verified. Permissions and MCP server definitions are not changed. | Claude Code and VS Code round-trip tests cover preserve, explicit enable/disable, and exact restore. No service-level capability claim is made. |
 
-The installed Claude Code on the development Mac is 2.1.88, below the custom-model-picker floor. Configuration generation is covered by tests, but no live Claude Code gateway conversation is claimed for v0.1.5. Windows configuration behavior is covered by platform-path tests and cross-compilation only unless a native Windows run is recorded in [VERIFICATION.md](VERIFICATION.md).
+The installed Claude Code on the development Mac is 2.1.88, below the custom-model-picker floor. Configuration generation is covered by tests, but no live Claude Code gateway conversation is claimed. Windows configuration behavior is covered by platform-path tests and cross-compilation only unless a native Windows run is recorded in [VERIFICATION.md](VERIFICATION.md).
 
 ## v0.1.6 image-input follow-up
 

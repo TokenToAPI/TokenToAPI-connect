@@ -1,5 +1,9 @@
 //! Claude Code provider environment shared by the terminal and VS Code writers.
-use crate::{models::ValidatedInput, provider_fields, setup_options::ArtifactMode};
+use crate::{
+    models::ValidatedInput,
+    provider_fields,
+    setup_options::{ArtifactMode, ToolSearchMode},
+};
 use std::collections::BTreeMap;
 
 pub fn role_models(input: &ValidatedInput) -> BTreeMap<String, String> {
@@ -80,6 +84,15 @@ pub fn environment(input: &ValidatedInput) -> BTreeMap<String, String> {
         ("CLAUDE_CODE_AUTO_MODE_SERVER", "0"),
     ] {
         env.insert(key.into(), value.into());
+    }
+    match input.options.tool_search {
+        ToolSearchMode::Preserve => {}
+        ToolSearchMode::Disabled => {
+            env.insert("ENABLE_TOOL_SEARCH".into(), "false".into());
+        }
+        ToolSearchMode::Enabled => {
+            env.insert("ENABLE_TOOL_SEARCH".into(), "true".into());
+        }
     }
     for (role, model) in role_models(input) {
         if role == "subagent" && model.is_empty() {

@@ -3,7 +3,7 @@ use tokentoapi_connect_lib::{
     adapter,
     models::{self, Client, ValidatedInput},
     restore,
-    setup_options::{ArtifactMode, WebSearchMode},
+    setup_options::{ArtifactMode, ToolSearchMode, WebSearchMode},
     storage::{self, Change, FileKind, Paths},
 };
 
@@ -346,10 +346,10 @@ fn codex_reserved_provider_names_are_removed_and_restored_byte_for_byte() {
 }
 
 #[test]
-fn claude_role_models_artifact_preference_and_inherited_environment_are_handled() {
+fn claude_role_models_artifact_and_tool_search_preferences_are_handled() {
     let home = tempfile::tempdir().unwrap();
     let paths = Paths::for_home(home.path());
-    let original = r#"{"env":{"CLAUDE_CODE_DISABLE_ARTIFACT":"1","ANTHROPIC_API_KEY":"old","CLAUDE_CODE_USE_BEDROCK":"1"}}"#;
+    let original = r#"{"env":{"CLAUDE_CODE_DISABLE_ARTIFACT":"1","ENABLE_TOOL_SEARCH":"true","ANTHROPIC_API_KEY":"old","CLAUDE_CODE_USE_BEDROCK":"1"}}"#;
     storage::atomic_write(&paths.target(FileKind::ClaudeSettings), original.as_bytes()).unwrap();
     let mut selected = input(Client::Claude);
     selected.model = "claude-sonnet-4-6".into();
@@ -377,6 +377,7 @@ fn claude_role_models_artifact_preference_and_inherited_environment_are_handled(
     assert_eq!(parsed["env"]["ANTHROPIC_API_KEY"], "");
     assert_eq!(parsed["env"]["CLAUDE_CODE_USE_BEDROCK"], "");
     assert_eq!(parsed["env"]["CLAUDE_CODE_AUTO_MODE_SERVER"], "0");
+    assert_eq!(parsed["env"]["ENABLE_TOOL_SEARCH"], "true");
     let mut enabled = input(Client::Claude);
     enabled.model = "claude-sonnet-4-6".into();
     enabled.selected_models = vec![
@@ -385,15 +386,63 @@ fn claude_role_models_artifact_preference_and_inherited_environment_are_handled(
         "claude-opus-4-6".into(),
     ];
     enabled.options.artifact_mode = ArtifactMode::Enabled;
+    enabled.options.tool_search = ToolSearchMode::Disabled;
     adapter::apply(&paths, enabled).unwrap();
     let parsed: serde_json::Value =
         serde_json::from_str(&fs::read_to_string(paths.target(FileKind::ClaudeSettings)).unwrap())
             .unwrap();
     assert_eq!(parsed["env"]["CLAUDE_CODE_DISABLE_ARTIFACT"], "0");
+    assert_eq!(parsed["env"]["ENABLE_TOOL_SEARCH"], "false");
     storage::restore(&paths, Client::Claude).unwrap();
     assert_eq!(
         fs::read_to_string(paths.target(FileKind::ClaudeSettings)).unwrap(),
         original
+    );
+}
+
+#[test]
+fn vscode_preserves_and_can_explicitly_change_tool_search_setting() {
+    let home = tempfile::tempdir().unwrap();
+    let paths = Paths::for_home(home.path());
+    let settings =
+        r#"{"claudeCode.environmentVariables":[{"name":"ENABLE_TOOL_SEARCH","value":"true"}]}"#;
+    storage::atomic_write(&paths.target(FileKind::ClaudeVscode), settings.as_bytes()).unwrap();
+
+    adapter::apply(&paths, input(Client::ClaudeVscode)).unwrap();
+    let configured = fs::read_to_string(paths.target(FileKind::ClaudeVscode)).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&configured).unwrap();
+    assert!(parsed["claudeCode.environmentVariables"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|entry| entry["name"] == "ENABLE_TOOL_SEARCH" && entry["value"] == "true"));
+
+    let mut disabled = input(Client::ClaudeVscode);
+    disabled.options.tool_search = ToolSearchMode::Disabled;
+    adapter::apply(&paths, disabled).unwrap();
+    let configured = fs::read_to_string(paths.target(FileKind::ClaudeVscode)).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&configured).unwrap();
+    assert!(parsed["claudeCode.environmentVariables"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|entry| entry["name"] == "ENABLE_TOOL_SEARCH" && entry["value"] == "false"));
+
+    let mut enabled = input(Client::ClaudeVscode);
+    enabled.options.tool_search = ToolSearchMode::Enabled;
+    adapter::apply(&paths, enabled).unwrap();
+    let configured = fs::read_to_string(paths.target(FileKind::ClaudeVscode)).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&configured).unwrap();
+    assert!(parsed["claudeCode.environmentVariables"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|entry| entry["name"] == "ENABLE_TOOL_SEARCH" && entry["value"] == "true"));
+
+    storage::restore(&paths, Client::ClaudeVscode).unwrap();
+    assert_eq!(
+        fs::read_to_string(paths.target(FileKind::ClaudeVscode)).unwrap(),
+        settings
     );
 }
 
