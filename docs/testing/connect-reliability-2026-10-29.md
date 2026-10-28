@@ -52,6 +52,21 @@ and requires support in the desktop client. No installed application bundle,
 user motion preference, authentication state or model identity was modified.
 The Windows visual behavior was not newly tested on a physical Windows device.
 
+## Windows and gateway acceptance
+
+Native Windows installation, upgrade from v0.2.0, settings preservation, real
+window launch/relaunch and Help-menu update dispatch passed in
+[run 40782429508](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/40782429508).
+The workflow selects versioned installers explicitly and verifies stable-alias
+SHA-256 equality before installation. Current v0.2.1 updater manifest and
+package digests are unchanged after adding aliases.
+
+The matching website fix is deployed as gateway v0.2.19.3 from reviewed source
+`e3da1c173466bb9cdd801f3846556db5c61ef480` at 05:47 Asia/Bangkok on 2026-10-29.
+Both real browser downloads completed with matching package digests. Phone
+width 390px fits both menu links without page overflow. Managed Linux tests,
+live health/public paths and public build-asset comparisons passed.
+
 ## Safari installation notes
 
 Safari can automatically decompress downloaded ZIPs. Use the extracted folder's
