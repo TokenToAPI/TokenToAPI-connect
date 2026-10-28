@@ -41,6 +41,12 @@ Browsers or the OS may show interception warnings such as "not a commonly downlo
 
 ### Import from the TokenToAPI platform
 
+The next platform update adds Mac and Windows downloads to the upper-left of
+**API Keys** and places **Import to Connect** first in each key row. Downloads
+resolve the latest stable Connect release when the page opens; the import
+dialog keeps its download links too. This placement update is pending platform
+deployment and requires no new Connect app release.
+
 Connect v0.2.1 includes the platform's **Import to Connect** handoff and the
 Codex context / thinking, image-capability, and credential compatibility fixes. The platform handoff requires
 the matching platform integration; v0.1.3 and later can handle these links.
