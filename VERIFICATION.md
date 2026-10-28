@@ -1,3 +1,16 @@
+# 2026-10-29 download and import follow-up — v0.2.1 unchanged
+
+Stable direct-download aliases were added without rebuilding/replacing the
+desktop packages or signed updater manifest. Both actual browser downloads
+match original package digests. Validation passed: 99 Rust tests (including
+combined handoff/import/restore), 19 helper/UI tests, 10 lifecycle tests,
+TypeScript and seven real Codex runtime scenarios with loopback-only requests.
+Native Windows install/upgrade/relaunch, settings preservation, Help menu and
+stable-alias integrity passed in [run 40782429508](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/40782429508).
+Gateway v0.2.19.3 is deployed; identical native effort animation remains
+unresolved. Mac signing/notarization was excluded by the user. See
+[the detailed evidence and limitations](docs/testing/connect-reliability-2026-10-29.md).
+
 # v0.2.1 verification
 
 Validated on 2026-10-22 on macOS arm64 using Node.js 24.13.0, pnpm 10.28.0, and Rust 1.99.1. Native Windows checks ran on GitHub's Windows runner.
