@@ -35,6 +35,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Previous download failed" }
           gh release download $env:RELEASE_TAG --repo $env:REPOSITORY --pattern $currentAsset
           if ($LASTEXITCODE -ne 0) { throw "Download failed" }
+          gh release download $env:RELEASE_TAG --repo $env:REPOSITORY --pattern 'TokenToAPI-Connect-Windows-x64-setup.exe' --dir stable
+          if ($LASTEXITCODE -ne 0) { throw "Stable download alias missing" }
+          if ((Get-FileHash $currentAsset -Algorithm SHA256).Hash -ne (Get-FileHash 'stable/TokenToAPI-Connect-Windows-x64-setup.exe' -Algorithm SHA256).Hash) { throw "Stable alias differs from versioned installer" }
       - name: Install, launch, upgrade in place, and preserve settings
         shell: pwsh
         env:
