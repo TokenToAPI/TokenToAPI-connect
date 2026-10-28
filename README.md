@@ -41,6 +41,18 @@ Browsers or the OS may show interception warnings such as "not a commonly downlo
 
 ### Import from the TokenToAPI platform
 
+The download menu uses direct latest-release assets, ready immediately without
+a GitHub API lookup.
+
+Safari may automatically expand the ZIP. Open TokenToAPI Connect.app inside the
+extracted folder, or move it into Applications. To keep the ZIP, uncheck
+Safari → Settings → General → Open “safe” files after downloading.
+
+The official desktop client's effort-slider animation is controlled by that
+client. Importing supported effort levels does not guarantee the same picker
+appearance. See [the dated import/effort validation](docs/testing/connect-reliability-2026-10-29.md)
+for tests and remaining limits.
+
 On **API Keys**, the upper-right **Download Connect** menu offers macOS and
 Windows downloads, and **Import to Connect** stays first in each key row. The
 menu resolves the latest stable Connect release when the page opens. Downloads
@@ -137,6 +149,13 @@ context settings. Replacing Connect alone does not rewrite an existing Codex
 catalog.
 
 ## Development & building
+
+Release maintainers: `node scripts/prepare-download-aliases.mjs` prepares stable
+Mac/Windows download names. Upload both aliases and `DOWNLOADS-SHA256SUMS.txt`
+with every stable release before marking it Latest. `release:manifest` also
+generates these files and includes aliases in the release checksums. The website
+uses these stable names; missing aliases break direct downloads. Preserve the
+versioned update artifacts and signatures.
 
 ### Prerequisites (all platforms)
 

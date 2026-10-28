@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { prepareDownloadAliases } from './prepare-download-aliases.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'))).version;
@@ -26,7 +27,8 @@ fs.writeFileSync(path.join(release, 'latest.json'), JSON.stringify({
   pub_date: new Date().toISOString(),
   platforms,
 }, null, 2) + '\n');
-const files = fs.readdirSync(release).filter(name => name.startsWith(prefix) || name === 'latest.json').sort();
+const aliases = prepareDownloadAliases(release, version);
+const files = fs.readdirSync(release).filter(name => name.startsWith(prefix) || aliases.includes(name) || name === 'latest.json' || name === 'DOWNLOADS-SHA256SUMS.txt').sort();
 const checksums = files.map(name => `${createHash('sha256').update(fs.readFileSync(path.join(release, name))).digest('hex')}  ${name}`).join('\n') + '\n';
 fs.writeFileSync(path.join(release, 'SHA256SUMS.txt'), checksums);
 fs.writeFileSync(path.join(release, `SHA256SUMS-${version}.txt`), checksums);

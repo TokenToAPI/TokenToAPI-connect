@@ -4,6 +4,68 @@ use std::{
 };
 use tokentoapi_connect_lib::handoff;
 
+#[tokio::test]
+async fn redeemed_handoff_imports_efforts_and_restores_both_codex_clients() {
+    use tokentoapi_connect_lib::{adapter, models, restore, storage};
+    for client in [models::Client::Codex, models::Client::CodexDesktop] {
+        let body = r#"{"code":0,"data":{"version":1,"providerName":"TokenToAPI","baseUrl":"https://example.test/v1","apiKey":"sk-local-fixture-only","suggestedClient":"codex","allowedClients":["codex","codex-desktop"]}}"#;
+        let (root, request) = server("200 OK", "", body);
+        let link = format!(
+            "tokentoapi-connect://v1/import?issuer={root}&code={}",
+            "A".repeat(43)
+        );
+        assert!(!link.contains("sk-local-fixture-only"));
+        let setup = handoff::redeem(&handoff::parse(&link, true).unwrap(), true)
+            .await
+            .unwrap();
+        assert!(!request.join().unwrap().contains("sk-local-fixture-only"));
+        let home = tempfile::tempdir().unwrap();
+        let paths = storage::Paths::for_home(home.path());
+        let original = b"# original client settings\nmodel = \"original\"\nmodel_reasoning_effort = \"ultra\"\n";
+        storage::atomic_write(&paths.target(storage::FileKind::CodexConfig), original).unwrap();
+        let selected = vec!["gpt-6-astra".to_string(), "gpt-5.6-sol".to_string()];
+        let catalog = models::build_codex_catalog(
+            &serde_json::json!({"data":[{"id":"gpt-6-astra"},{"id":"gpt-5.6-sol"}]}),
+            &selected,
+        )
+        .unwrap();
+        let imported = models::ValidatedInput {
+            client,
+            api_key: setup.api_key,
+            root: setup.base_url,
+            model: selected[0].clone(),
+            selected_models: selected,
+            catalog: Some(catalog),
+            options: Default::default(),
+        };
+        assert!(adapter::apply(&paths, imported).unwrap().changed);
+        let config = std::fs::read_to_string(paths.target(storage::FileKind::CodexConfig)).unwrap();
+        assert!(config.contains("model_reasoning_effort = \"ultra\""));
+        assert!(config.contains("https://example.test/v1"));
+        let saved: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(paths.target(storage::FileKind::CodexCatalog)).unwrap(),
+        )
+        .unwrap();
+        for model in saved["models"].as_array().unwrap() {
+            assert!(model["supported_reasoning_levels"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|level| level["effort"] == "ultra"));
+        }
+        let point = restore::list(&paths)
+            .into_iter()
+            .find(|point| point.client == client.backup_client())
+            .unwrap();
+        restore::apply(&paths, client, point.review_id.as_deref().unwrap(), false).unwrap();
+        assert_eq!(
+            std::fs::read(paths.target(storage::FileKind::CodexConfig)).unwrap(),
+            original
+        );
+        assert!(!paths.target(storage::FileKind::CodexCatalog).exists());
+    }
+}
+
 #[test]
 fn strict_handoff_links() {
     let good = format!(
