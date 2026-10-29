@@ -6,6 +6,7 @@ use std::{
     process::{Command, Stdio},
     time::{Duration, Instant},
 };
+use toml_edit::{DocumentMut, Item};
 
 #[derive(Default, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -162,6 +163,22 @@ fn version_cmp(left: &str, right: &str) -> Option<std::cmp::Ordering> {
         left.cmp(&right)
             .then_with(|| right_prerelease.cmp(&left_prerelease)),
     )
+}
+
+fn unsupported_codex_mcp_fields(config: &DocumentMut) -> Vec<&'static str> {
+    let Some(servers) = config.get("mcp_servers").and_then(Item::as_table_like) else {
+        return Vec::new();
+    };
+    ["type", "timeout", "autoApprove"]
+        .into_iter()
+        .filter(|field| {
+            servers.iter().any(|(_, server)| {
+                server
+                    .as_table_like()
+                    .is_some_and(|server| server.contains_key(field))
+            })
+        })
+        .collect()
 }
 
 #[cfg(target_os = "macos")]
@@ -349,6 +366,10 @@ pub fn inspect(paths: &Paths, client: Client) -> Compatibility {
                 }) {
                     result.warnings.push("Codex has a provider table using a reserved name. Import will back it up and remove the incompatible table; restore can return it exactly.".into());
                 }
+                let unsupported = unsupported_codex_mcp_fields(&config);
+                if !unsupported.is_empty() {
+                    result.warnings.push(format!("Existing Codex MCP server entries contain fields that Codex does not accept: {}. Connect preserves MCP configuration and will not remove them. If Codex reports invalid settings or --strict-config refuses to load, review those entries and remove only unsupported fields.", unsupported.join(", ")));
+                }
             }
         }
     }
@@ -382,6 +403,37 @@ pub fn next_steps(client: Client) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn detects_non_codex_mcp_fields_without_mutating_config() {
+        let source = concat!(
+            "[mcp_servers.legacy]\n",
+            "command = \"server\"\n",
+            "type = \"stdio\"\n",
+            "timeout = 30\n",
+            "autoApprove = [\"read\"]\n",
+            "tool_timeout_sec = 120\n",
+        );
+        let config = source.parse::<DocumentMut>().unwrap();
+        assert_eq!(
+            unsupported_codex_mcp_fields(&config),
+            vec!["type", "timeout", "autoApprove"]
+        );
+        assert_eq!(config.to_string(), source);
+    }
+
+    #[test]
+    fn codex_native_mcp_fields_do_not_trigger_the_compatibility_warning() {
+        let config = concat!(
+            "[mcp_servers.native]\n",
+            "command = \"server\"\n",
+            "startup_timeout_sec = 20\n",
+            "tool_timeout_sec = 120\n",
+        )
+        .parse::<DocumentMut>()
+        .unwrap();
+        assert!(unsupported_codex_mcp_fields(&config).is_empty());
+    }
 
     #[test]
     fn claude_model_picker_minimum_version_uses_semantic_comparison() {
