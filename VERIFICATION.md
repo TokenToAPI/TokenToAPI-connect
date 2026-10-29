@@ -1,3 +1,6 @@
+<!-- Website follow-up: see docs/APP_UPDATES.md. Stable aliases are optional;
+the gateway discovers normal release packages automatically. No Connect app
+binary or updater change is part of the Safari download fix. -->
 # 2026-10-29 download and import follow-up — v0.2.1 unchanged
 
 Stable direct-download aliases were added without rebuilding/replacing the

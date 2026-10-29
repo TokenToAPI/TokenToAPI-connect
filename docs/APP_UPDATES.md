@@ -54,19 +54,28 @@ The signing key does not replace Apple notarization or Windows publisher signing
 
 ## Platform downloads follow the latest release
 
-The platform's **Import to Connect** dialog requests
-`https://api.github.com/repos/TokenToAPI/TokenToAPI-connect/releases/latest`
-each time it opens, with caching disabled. It resolves the uploaded
-`TokenToAPI-Connect-VERSION-macOS-arm64.zip` and
-`TokenToAPI-Connect-VERSION-Windows-x64-setup.exe` assets. The Windows installer
-takes precedence over the portable ZIP. If GitHub is unavailable or an asset
-is missing, the link falls back to the latest stable release page.
+On **API Keys**, **Download Connect** links to same-origin gateway routes:
+`/api/v1/connect/download/mac` and `/api/v1/connect/download/windows`.
+The gateway reads the official repository's latest stable release and selects
+its normal `TokenToAPI-Connect-VERSION-macOS-arm64.zip` or
+`TokenToAPI-Connect-VERSION-Windows-x64-setup.exe`. It does not choose updater
+archives, signatures or the Windows portable ZIP. Existing stable aliases are
+accepted for compatibility, but they are not required.
 
-Keep these asset names consistent, upload all packages before publication, and
-publish the stable release as **Latest**. Future releases then appear in the
-platform without a platform deployment or a version-specific download change.
-Drafts and prereleases are not offered. Always verify the deployed resolver
-and actual download URLs after publishing.
+Publish your normal packages and signed updater manifest before marking the
+stable release Latest. No extra names, manual website changes or coordination
+step is needed. The gateway shares a five-minute metadata cache between both
+platforms, so a newly published stable release appears within five minutes.
+Drafts and prereleases are rejected. Metadata errors or missing platform files
+show an explicit retry page with the official release-page link; the gateway
+does not silently offer an expired cached release. A failed metadata lookup is
+held for 30 seconds to avoid exhausting GitHub's public API limit.
+
+The browser follows an ordinary navigation redirect to the selected attachment.
+The dropdown stays mounted through clicks so Safari focus changes cannot
+remove a link before its native download action. Outside clicks, Escape and
+keyboard focus moving outside the menu dismiss it. Verify actual downloads
+and their checksums after publishing.
 
 ## Model refresh
 
