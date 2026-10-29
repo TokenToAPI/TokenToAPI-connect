@@ -41,8 +41,9 @@ Browsers or the OS may show interception warnings such as "not a commonly downlo
 
 ### Import from the TokenToAPI platform
 
-The download menu uses direct latest-release assets, ready immediately without
-a GitHub API lookup.
+The download menu uses the TokenToAPI gateway to find the latest stable release's
+normal macOS ZIP and Windows setup installer. It does not make GitHub API
+requests in your browser. Release information is refreshed within five minutes.
 
 Safari may automatically expand the ZIP. Open TokenToAPI Connect.app inside the
 extracted folder, or move it into Applications. To keep the ZIP, uncheck
@@ -55,7 +56,7 @@ for tests and remaining limits.
 
 On **API Keys**, the upper-right **Download Connect** menu offers macOS and
 Windows downloads, and **Import to Connect** stays first in each key row. The
-menu resolves the latest stable Connect release when the page opens. Downloads
+gateway resolves the latest stable Connect release when a download is requested. Downloads
 are no longer duplicated inside the import dialog. This layout was deployed
 and verified on 2026-10-29 with gateway v0.2.19.2; no new Connect app release
 is required.
@@ -150,12 +151,13 @@ catalog.
 
 ## Development & building
 
-Release maintainers: `node scripts/prepare-download-aliases.mjs` prepares stable
-Mac/Windows download names. Upload both aliases and `DOWNLOADS-SHA256SUMS.txt`
-with every stable release before marking it Latest. `release:manifest` also
-generates these files and includes aliases in the release checksums. The website
-uses these stable names; missing aliases break direct downloads. Preserve the
-versioned update artifacts and signatures.
+Release maintainers: publish the normal versioned macOS ZIP and Windows setup
+installer with your usual update packages and `latest.json`, then make the
+stable release Latest. The website discovers those files automatically within
+five minutes. No extra aliases, renaming, website edit or separate handoff to
+the website maintainer is required. The alias helper remains optional for
+compatibility with old direct links; current website downloads do not depend
+on it. Keep signed updater files and their manifest unchanged by this process.
 
 ### Prerequisites (all platforms)
 

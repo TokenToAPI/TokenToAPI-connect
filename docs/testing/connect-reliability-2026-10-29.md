@@ -1,3 +1,5 @@
+> Superseded for website download handling by the later Safari fix: the gateway now discovers normal versioned assets automatically. Stable aliases remain compatible but are optional; no extra manual release step is required. Earlier test records below are historical.
+
 # Connect download and import follow-up — 2026-10-29
 
 ## Scope and results
