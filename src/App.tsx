@@ -1,3 +1,4 @@
+import { ClientIcon } from "./ClientIcon";
 import {
   useEffect,
   useRef,
@@ -75,29 +76,6 @@ function BrandIcon({ className = "" }: { className?: string }) {
       alt=""
       draggable={false}
     />
-  );
-}
-function ClientIcon({ client, size = 24 }: { client: Client; size?: number }) {
-  return clientFamily(client) !== "claude" ? (
-    <Terminal size={size} strokeWidth={1.6} />
-  ) : (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      {[0, 30, 60, 90, 120, 150].map((angle) => (
-        <path
-          key={angle}
-          d="M12 2.5V21.5"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          transform={`rotate(${angle} 12 12)`}
-        />
-      ))}
-    </svg>
   );
 }
 function Modal({
