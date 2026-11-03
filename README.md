@@ -2,7 +2,7 @@
 
 # TokenToAPI Connect
 
-A simple local API configurator. Choose a gateway, pick Claude, Codex or Grok CLI, enter your API Key, select the models you need, and import.
+A simple local API configurator. Choose a gateway, pick Claude, Codex, Gemini CLI or Grok CLI, enter your API Key, select the models you need, and import.
 
 **v0.2.2** · [Downloads](https://github.com/TokenToAPI/TokenToAPI-connect/releases/latest) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
 
@@ -58,7 +58,7 @@ On **API Keys**, the upper-right **Download Connect** menu offers macOS and
 Windows downloads, and **Import to Connect** stays first in each key row. The
 gateway resolves the latest stable Connect release when a download is requested. Downloads
 are no longer duplicated inside the import dialog. This layout was deployed
-and verified on 2026-10-29 with gateway v0.2.29.2; no new Connect app release
+and verified on 2026-10-29 with gateway v0.2.19.2; no new Connect app release
 is required.
 
 Connect v0.2.2 includes the platform's **Import to Connect** handoff and the
@@ -96,7 +96,7 @@ See the [diagnosis and recovery guide](docs/testing/codex-image-input.md).
 ### Configuration steps
 
 1. **Choose a gateway**: [TokenToAPI](https://tokentoapi.com) is the default; you can also add your own site. Only one is used at a time.
-2. **Choose a client**: pick Claude, Codex or Grok CLI, then choose the desktop app, terminal, or VS Code extension.
+2. **Choose a client**: pick Claude, Codex, Gemini CLI or Grok CLI, then choose the desktop app, terminal, or VS Code extension.
 3. **Enter your API Key**: click to fetch the available models, which reads the site's `/v1/models`.
 4. **Select models and import**: choose the models you need, set the default model, and click Import.
 
@@ -112,12 +112,14 @@ To revert, choose **Use original config** from the gateway list. When one unchan
 | Claude Code terminal | API, default model, and available-model menu in the user `settings.json` |
 | Claude Code · VS Code | The default user's extension settings, with Claude Code model settings synced |
 | Codex desktop & terminal | Shared user configuration, API Key authentication, and the selected model catalog |
+| Gemini CLI | Native Gemini API, API-key environment and one default chat model |
+| Grok CLI | Selected native custom models, gateway-bound credentials and supported reasoning choices |
 
-`CLAUDE_CONFIG_DIR` and `CODEX_HOME` are respected. The Windows build configures local Windows clients; WSL, Remote SSH, and custom VS Code profiles must be configured in their own environments.
+`CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `GROK_HOME` and `GEMINI_CLI_HOME` are respected. The Windows build configures local Windows clients; WSL, Remote SSH, and custom VS Code profiles must be configured in their own environments.
 
 The supported scope covers client versions that allow local API configuration, excluding the Claude web app, mobile clients, and cloud tasks. Claude Code needs version 2.1.242 or newer for the custom multi-model picker; older versions receive a compatibility warning. The Claude desktop app needs support for third-party inference mode. Organization-managed Claude providers and Codex with top-level custom profiles enabled block local import.
 
-The gateway must expose `/v1/models` with Bearer authentication and support the Messages or Responses protocol of the target client. **Fetching the model list and writing configuration does not equal a verified conversation and tool calls.** Confirm in the target client after importing. See [VERIFICATION.md](VERIFICATION.md) for the test scope.
+The gateway must expose `/v1/models` with Bearer authentication for Messages/Responses clients, or `/v1beta/models` and the native Gemini API for Gemini CLI. **Fetching the model list and writing configuration does not equal a verified conversation and tool calls.** Confirm in the target client after importing. See [VERIFICATION.md](VERIFICATION.md) for the test scope.
 
 ## Configuration & data
 
@@ -269,7 +271,7 @@ Artifacts go to `release/`. The Windows script skips the installer and checks th
 
 `.cargo/config.toml` controls fully static CRT linking; `tauri.windows.conf.json` disables Tauri's own mixed-CRT override to avoid conflicts.
 
-Run release checks locally by default. Build and validate Windows packages on a native Windows machine; cross-compilation on a Mac does not verify Windows runtime behavior. The v0.2.2 Windows package was cross-compiled on macOS and passed native Windows installation, upgrade from v0.2.0, relaunch, settings preservation, and Help-menu update checks. See [verification notes](VERIFICATION.md) for evidence and scope. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
+Run release checks locally by default. Build and validate Windows packages on a native Windows machine; cross-compilation on a Mac does not verify Windows runtime behavior. The v0.2.2 Windows package was cross-compiled on macOS and passed native Windows installation, upgrade from v0.2.1, relaunch, settings preservation, and Help-menu update checks. See [verification notes](VERIFICATION.md) for evidence and scope. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
 
 ## Isolated testing
 
@@ -308,4 +310,4 @@ Choose Gemini → Terminal, fetch models with a Gemini-group key, and select one
 
 Connect backs up and updates `.gemini/settings.json` and `.gemini/.env`; existing MCP servers, preferences and OAuth files are preserved. `GEMINI_CLI_HOME` is respected. Use **Use original config** to restore both files exactly. Existing shell variables, project `.env`/settings, folder trust and organization policies can override these user settings. Complex multiline environment files are refused without writes. Website import for Gemini keys requires the companion gateway update.
 
-Configuration follows the [official Gemini CLI documentation](https://geminicli.com/docs/reference/configuration/). Native request behavior is tested with Gemini CLI 0.46.0 and a loopback API; this does not establish paid upstream inference or native Windows Gemini CLI behavior.
+Configuration follows the [official Gemini CLI documentation](https://geminicli.com/docs/reference/configuration/). Native request behavior is tested on macOS and Windows with Gemini CLI 0.46.0 and a loopback API; paid upstream inference is not claimed.
