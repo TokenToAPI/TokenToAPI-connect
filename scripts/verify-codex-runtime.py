@@ -9,6 +9,7 @@ from pathlib import Path
 import platform
 import queue
 import shutil
+import signal
 import subprocess
 import tarfile
 import tempfile
@@ -145,6 +146,7 @@ class Codex:
             [str(executable), "app-server", "--stdio"],
             cwd=home,
             env=env,
+            start_new_session=(os.name != "nt"),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -243,7 +245,15 @@ class Codex:
                     check=False,
                 )
             else:
-                self.process.terminate()
+                try:
+                    os.killpg(self.process.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+        elif os.name != "nt":
+            try:
+                os.killpg(self.process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
         try:
             self.process.wait(timeout=10)
         except subprocess.TimeoutExpired:
@@ -544,8 +554,8 @@ def main():
                          id_only_vision, model="gpt-6-astra", vision=True,
                          selected_models=["gpt-6-astra", "text-only-alias"])
             )
-            report["passed"] = True
             report["cases"].append(run_capability_matrix(binary, fixture, temporary, args.output, gateway, endpoint))
+            report["passed"] = True
         finally:
             gateway.shutdown()
             gateway.server_close()
