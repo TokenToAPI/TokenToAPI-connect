@@ -1,14 +1,13 @@
-# v0.2.2 candidate verification — 2026-11-03
+# v0.2.2 verification — 2026-11-03
 
-- 107 Rust core/configuration tests, 21 helper/UI tests, 11 lifecycle tests, TypeScript, strict desktop Clippy and production web builds passed locally.
-- Real Gemini CLI 0.46.0 loaded adapter-generated settings and authenticated to a loopback native Gemini streaming endpoint using the selected model. No paid inference or real client configuration was used.
-- Gemini regressions cover native model discovery and media filtering, capability-negotiated handoff, single-default UI behavior, reimport, unrelated settings/MCP and OAuth preservation, private file permissions, malformed-file refusal and exact restore.
-- Mac arm64 and Windows x64 packages built with the existing updater signing key. Signature verification, previous-version upgrade tests, native Windows smoke and public publication acceptance are pending; do not interpret this candidate record as deployed.
-- Browser preview: Gemini client choice inspected at default viewport and minimum 380 × 620; no horizontal overflow. Other browsers/devices and paid provider inference are not claimed.
+- 107 Rust tests on macOS and 108 on native Windows passed. Local TypeScript, 21 helper/UI tests, 11 lifecycle tests, strict desktop Clippy, formatting and production web builds passed.
+- Real Gemini CLI 0.46.0 on macOS and Windows loaded adapter-generated settings and authenticated to the selected native Gemini streaming model through a loopback API. Seven real Codex 0.165.0 scenarios passed, including 52 image turns across 26 vision models. No paid inference or real client settings were used.
+- Gemini regressions cover native discovery/media filtering, capability-negotiated handoff, one-default selection, reimport, unrelated settings/MCP and OAuth preservation, file permissions, malformed-file refusal and exact restore.
+- Mac arm64 and Windows x64 packages use the existing updater signing key. Both signatures verify. Three Mac artifact/upgrade tests passed, including actual v0.2.1 app copies, network check/download/install, preservation, strict sealed-app verification, and rejection of tampering, substituted versions and downgrades.
+- Native Windows install/upgrade from v0.2.1, relaunch, settings preservation and Help-menu update dispatch passed: [run 41651389333](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/41651389333). The first attempt found a Windows JSON test-fixture escaping error, corrected using JSON serialization; the application writer was unchanged. An early installer attempt ran before draft upload completed; the complete-draft rerun passed.
+- All 12 downloaded draft release files matched the tested local bytes. Public updater, latest platform download and post-publication checks are recorded below after publication.
+- Browser preview covered default desktop and minimum 380 × 620 widths, with no horizontal overflow. Provider icons are distinct. Other browsers/devices and paid provider inference are not claimed. macOS remains ad-hoc signed/unnotarized and Windows is not publisher-signed.
 
-<!-- Website follow-up: see docs/APP_UPDATES.md. Stable aliases are optional;
-the gateway discovers normal release packages automatically. No Connect app
-binary or updater change is part of the Safari download fix. -->
 # 2026-10-29 download and import follow-up — v0.2.1 unchanged
 
 Stable direct-download aliases were added without rebuilding/replacing the

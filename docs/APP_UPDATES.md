@@ -41,14 +41,27 @@ Losing the private key prevents trusted updates to existing installations.
 4. Run `pnpm release:manifest`. It requires both signed updater artifacts.
    Upload the two manual ZIPs, Windows setup EXE, macOS updater archive,
    signatures, latest.json, and both checksum files to a draft GitHub release.
-5. Run the regular tests and the macOS release-artifact test:
+5. Run the regular tests and the macOS release-artifact tests. Retain the
+   previous stable Mac updater archive in `release/`, ensure the tests reference
+   that previous version/tag, and set `TOKENTOAPI_PREVIOUS_MAC_ZIP` to its manual
+   ZIP before running
    `cargo test --manifest-path src-tauri/Cargo.toml --features release-tests --test updater_release`.
-   Dispatch **Windows release smoke test** for the draft tag.
+   Dispatch **Windows release smoke test** for the draft tag and previous
+   stable tag. Both installer acceptance and native Gemini compatibility jobs
+   must pass. The latter runs the Rust configuration tests and actual Gemini
+   CLI requests against a loopback API using adapter-generated settings.
 6. Verify uploaded bytes against checksums, then publish the release as latest.
    Confirm latest.json and both platform download URLs resolve publicly.
    Verify the production platform download resolver selects the newly published
    macOS ZIP and Windows setup installer, and both downloads return HTTP 200.
    Never publish a latest release without its manifest and both update packages.
+7. Keep release notes in the previous release's format: fixes/improvements,
+   after-updating instructions, existing-user update path, verification evidence,
+   limitations and checksums. Update README, CHANGELOG, VERIFICATION,
+   compatibility/setup guidance and the dated project record with actual results.
+   After publication, follow both production download routes, download the Mac
+   ZIP and Windows setup EXE, and match their bytes to this release's checksums.
+   Record the public signed-updater check as well as the platform redirects.
 
 The signing key does not replace Apple notarization or Windows publisher signing.
 
