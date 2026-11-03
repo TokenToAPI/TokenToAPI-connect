@@ -17,6 +17,7 @@ pub struct Paths {
     pub vscode: PathBuf,
     pub codex: PathBuf,
     pub grok: PathBuf,
+    pub gemini: PathBuf,
     pub state: PathBuf,
     pub sandbox: bool,
 }
@@ -40,6 +41,7 @@ impl Paths {
             vscode,
             codex: home.join(".codex"),
             grok: home.join(".grok"),
+            gemini: home.join(".gemini"),
             state: home.join(".tokentoapi-connect"),
             sandbox: true,
         }
@@ -74,6 +76,7 @@ impl Paths {
         paths.claude = override_dir("CLAUDE_CONFIG_DIR", paths.claude)?;
         paths.codex = override_dir("CODEX_HOME", paths.codex)?;
         paths.grok = override_dir("GROK_HOME", paths.grok)?;
+        paths.gemini = override_dir("GEMINI_CLI_HOME", home.clone())?.join(".gemini");
         #[cfg(target_os = "windows")]
         {
             let data = override_dir("LOCALAPPDATA", home.join("AppData/Local"))?;
@@ -143,6 +146,8 @@ impl Paths {
             )),
             FileKind::ClaudeDesktopMeta => self.claude_threep.join("configLibrary/_meta.json"),
             FileKind::ClaudeVscode => self.vscode.clone(),
+            FileKind::GeminiSettings => self.gemini.join("settings.json"),
+            FileKind::GeminiEnv => self.gemini.join(".env"),
             FileKind::GrokConfig => self.grok.join("config.toml"),
             FileKind::CodexConfig => self.codex.join("config.toml"),
             FileKind::CodexAuth => self.codex.join("auth.json"),
@@ -245,12 +250,15 @@ pub enum FileKind {
     ClaudeVscode,
     CodexConfig,
     GrokConfig,
+    GeminiSettings,
+    GeminiEnv,
     CodexAuth,
     CodexCatalog,
 }
 impl FileKind {
     pub fn primary(client: Client) -> Self {
         match client {
+            Client::Gemini => Self::GeminiSettings,
             Client::Grok => Self::GrokConfig,
             Client::Claude => Self::ClaudeSettings,
             Client::ClaudeDesktop => Self::ClaudeDesktopProfile,
@@ -260,6 +268,7 @@ impl FileKind {
     }
     fn belongs_to(self, client: Client) -> bool {
         match client {
+            Client::Gemini => matches!(self, Self::GeminiSettings | Self::GeminiEnv),
             Client::Grok => self == Self::GrokConfig,
             Client::Claude => self == Self::ClaudeSettings,
             Client::ClaudeDesktop => matches!(

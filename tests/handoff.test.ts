@@ -13,3 +13,8 @@ test("auto handoff never replaces a busy operation or an edited wizard", () => {
   assert.equal(shouldAutoAccept(true, true, false), false);
   assert.equal(shouldAutoAccept(true, false, true), false);
 });
+
+test("Gemini handoff selects one compatible default", () => {
+ const result = handoffSelection("gemini", [{id:"gemini-2.5-pro",name:"Pro"},{id:"gemini-2.5-flash",name:"Flash"}]);
+ assert.deepEqual(result.ids, ["gemini-2.5-pro"]);
+});

@@ -15,12 +15,14 @@ fn input(client: Client) -> ValidatedInput {
         model: match client {
             Client::Claude | Client::ClaudeDesktop | Client::ClaudeVscode => "claude-sonnet-test",
             Client::Grok => "grok-test",
+            Client::Gemini => "gemini-2.5-pro",
             Client::Codex | Client::CodexDesktop => "gpt-test-codex",
         }
         .into(),
         selected_models: vec![match client {
             Client::Claude | Client::ClaudeDesktop | Client::ClaudeVscode => "claude-sonnet-test",
             Client::Grok => "grok-test",
+            Client::Gemini => "gemini-2.5-pro",
             Client::Codex | Client::CodexDesktop => "gpt-test-codex",
         }
         .into()],

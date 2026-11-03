@@ -11,6 +11,7 @@ use std::{
 pub enum Client {
     Claude,
     Grok,
+    Gemini,
     Codex,
     #[serde(rename = "claude-desktop")]
     ClaudeDesktop,
@@ -20,13 +21,14 @@ pub enum Client {
     CodexDesktop,
 }
 impl Client {
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 7] = [
         Self::CodexDesktop,
         Self::Codex,
         Self::ClaudeDesktop,
         Self::Claude,
         Self::ClaudeVscode,
         Self::Grok,
+        Self::Gemini,
     ];
     pub fn is_codex(self) -> bool {
         matches!(self, Self::Codex | Self::CodexDesktop)
@@ -42,6 +44,7 @@ impl Client {
     pub fn id(self) -> &'static str {
         match self {
             Self::Grok => "grok",
+            Self::Gemini => "gemini",
             Self::Claude => "claude",
             Self::Codex => "codex",
             Self::ClaudeDesktop => "claude-desktop",
@@ -52,6 +55,7 @@ impl Client {
     pub fn name(self) -> &'static str {
         match self {
             Self::Grok => "Grok CLI",
+            Self::Gemini => "Gemini CLI",
             Self::Claude => "Claude Code Terminal",
             Self::Codex => "Codex Terminal",
             Self::ClaudeDesktop => "Claude Desktop",
@@ -198,9 +202,24 @@ pub fn catalog_models(payload: &Value) -> Vec<String> {
     models
 }
 
+pub fn gemini_chat_model(id: &str) -> bool {
+    let id = id.to_ascii_lowercase();
+    id.starts_with("gemini-")
+        && !["image", "tts", "embedding", "robotics", "audio", "live"]
+            .iter()
+            .any(|part| id.contains(part))
+}
+
 pub fn is_chat_model(id: &str) -> bool {
     let id = id.rsplit('/').next().unwrap_or(id).to_ascii_lowercase();
+    if id.starts_with("gemini-") && !gemini_chat_model(&id) {
+        return false;
+    }
     ![
+        "imagen-",
+        "veo-",
+        "lyria-",
+        "embedding-",
         "gpt-image",
         "dall-e",
         "whisper-",
@@ -225,6 +244,11 @@ fn model_identifier(row: &Value) -> Option<&str> {
     row.get("id")
         .and_then(Value::as_str)
         .or_else(|| row.get("slug").and_then(Value::as_str))
+        .or_else(|| {
+            row.get("name")
+                .and_then(Value::as_str)
+                .and_then(|name| name.strip_prefix("models/"))
+        })
 }
 
 const CODEX_MODEL_METADATA_FIELDS: &[&str] = &[
@@ -388,7 +412,11 @@ pub async fn discover(input: DiscoveryInput) -> Result<DiscoveredModels, String>
         .build()
         .map_err(|_| "Could not initialize the network connection.")?;
     const CODEX_CATALOG_CLIENT_VERSION: &str = "0.162.0";
-    let endpoint = format!("{root}/v1/models");
+    let endpoint = if input.client == Client::Gemini {
+        format!("{root}/v1beta/models")
+    } else {
+        format!("{root}/v1/models")
+    };
     let fetch = |codex_manifest: bool| {
         let mut request = client
             .get(&endpoint)
@@ -441,7 +469,10 @@ pub async fn discover(input: DiscoveryInput) -> Result<DiscoveredModels, String>
     }
     let payload: Value = serde_json::from_slice(&bytes)
         .map_err(|_| "The model catalog returned by the API is not valid JSON.")?;
-    let models = catalog_models(&payload);
+    let mut models = catalog_models(&payload);
+    if input.client == Client::Gemini {
+        models.retain(|id| gemini_chat_model(id));
+    }
     if models.is_empty() {
         return Err("The API key returned an empty model catalog; check whether the group has available models.".into());
     }
@@ -457,7 +488,11 @@ pub async fn discover(input: DiscoveryInput) -> Result<DiscoveredModels, String>
                     rows.iter()
                         .find(|row| model_identifier(row).is_some_and(|v| v.trim() == id))
                 })
-                .and_then(|row| row.get("display_name").or_else(|| row.get("name")))
+                .and_then(|row| {
+                    row.get("display_name")
+                        .or_else(|| row.get("displayName"))
+                        .or_else(|| row.get("name"))
+                })
                 .and_then(Value::as_str)
                 .filter(|name| {
                     !name.is_empty() && name.len() <= 200 && !name.chars().any(char::is_control)
@@ -481,13 +516,20 @@ pub fn prepare_selection(
     selected: &[String],
     default_model: &str,
 ) -> Result<ValidatedInput, String> {
+    if data.client == Client::Gemini && selected.len() != 1 {
+        return Err("Choose one default model for Gemini CLI.".into());
+    }
     if selected.is_empty() || selected.len() > 200 {
         return Err("Select 1–200 models to import.".into());
     }
     let available: HashSet<&str> = data.choices.iter().map(|m| m.id.as_str()).collect();
     let mut seen = HashSet::new();
     for id in selected {
-        if !available.contains(id.as_str()) || !is_chat_model(id) || !seen.insert(id) {
+        if !available.contains(id.as_str())
+            || !is_chat_model(id)
+            || (data.client == Client::Gemini && !gemini_chat_model(id))
+            || !seen.insert(id)
+        {
             return Err(
                 "A selected model is not in the catalog returned for this key, or it was selected more than once. Fetch the models again.".into(),
             );

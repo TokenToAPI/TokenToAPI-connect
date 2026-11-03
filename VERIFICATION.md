@@ -1,3 +1,11 @@
+# v0.2.2 candidate verification — 2026-11-03
+
+- 107 Rust core/configuration tests, 21 helper/UI tests, 11 lifecycle tests, TypeScript, strict desktop Clippy and production web builds passed locally.
+- Real Gemini CLI 0.46.0 loaded adapter-generated settings and authenticated to a loopback native Gemini streaming endpoint using the selected model. No paid inference or real client configuration was used.
+- Gemini regressions cover native model discovery and media filtering, capability-negotiated handoff, single-default UI behavior, reimport, unrelated settings/MCP and OAuth preservation, private file permissions, malformed-file refusal and exact restore.
+- Mac arm64 and Windows x64 packages built with the existing updater signing key. Signature verification, previous-version upgrade tests, native Windows smoke and public publication acceptance are pending; do not interpret this candidate record as deployed.
+- Browser preview: Gemini client choice inspected at default viewport and minimum 380 × 620; no horizontal overflow. Other browsers/devices and paid provider inference are not claimed.
+
 <!-- Website follow-up: see docs/APP_UPDATES.md. Stable aliases are optional;
 the gateway discovers normal release packages automatically. No Connect app
 binary or updater change is part of the Safari download fix. -->

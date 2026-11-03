@@ -10,11 +10,12 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-pub const CLIENTS: [Client; 5] = [
+pub const CLIENTS: [Client; 6] = [
     Client::ClaudeDesktop,
     Client::Claude,
     Client::ClaudeVscode,
     Client::Grok,
+    Client::Gemini,
     Client::Codex,
 ];
 
@@ -67,6 +68,8 @@ fn label(kind: FileKind) -> &'static str {
         FileKind::CodexConfig => "Codex original provider, models and settings",
         FileKind::CodexAuth => "Codex original login or API credentials",
         FileKind::CodexCatalog => "Codex model catalog",
+        FileKind::GeminiSettings => "Gemini CLI original settings and model",
+        FileKind::GeminiEnv => "Gemini CLI gateway and API credentials",
         FileKind::GrokConfig => "Grok CLI configuration",
     }
 }

@@ -39,7 +39,7 @@ export default function SetupOptionsPanel({
       </div>
     );
   }
-  if ((client === "claude-desktop" || client === "grok")) return null;
+  if ((client === "claude-desktop" || client === "grok" || client === "gemini")) return null;
 
   const roles = [
     ["haiku", "Background tasks / Haiku"],

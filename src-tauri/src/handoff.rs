@@ -93,7 +93,7 @@ pub async fn redeem(link: &HandoffLink, allow_loopback: bool) -> Result<HandoffS
         .map_err(|_| RETRY)?;
     let mut response = client
         .post(format!("{}/api/v1/connect/handoff/redeem", link.issuer))
-        .header("X-TokenToAPI-Connect-Capabilities", "grok-cli")
+        .header("X-TokenToAPI-Connect-Capabilities", "grok-cli,gemini-cli")
         .json(&serde_json::json!({"code": link.code}))
         .send()
         .await
@@ -128,7 +128,10 @@ pub async fn redeem(link: &HandoffLink, allow_loopback: bool) -> Result<HandoffS
             .any(|c| c.is_whitespace() || c.is_control())
         || !matches!(
             setup.suggested_client,
-            models::Client::Claude | models::Client::Codex | models::Client::Grok
+            models::Client::Claude
+                | models::Client::Codex
+                | models::Client::Grok
+                | models::Client::Gemini
         )
     {
         return Err(RETRY.into());

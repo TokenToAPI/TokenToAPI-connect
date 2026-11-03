@@ -680,3 +680,29 @@ fn numeric_gateway_efforts_are_kept_as_codex_string_options() {
     assert_eq!(model["supported_reasoning_levels"][0]["effort"], "1024");
     assert_eq!(model["supported_reasoning_levels"][1]["effort"], "4096");
 }
+
+#[tokio::test]
+async fn gemini_discovery_uses_native_catalog_and_excludes_media_models() {
+    let (root, handle) = server(
+        "200 OK",
+        "",
+        r#"{"models":[{"name":"models/gemini-2.5-pro","displayName":"Gemini Pro"},{"name":"models/gemini-2.5-flash-image"},{"name":"models/gemini-2.5-flash-preview-tts"},{"name":"models/embedding-001"}]}"#,
+    );
+    let mut req = request(root);
+    req.client = Client::Gemini;
+    let data = models::discover(req).await.unwrap();
+    assert_eq!(
+        data.choices
+            .iter()
+            .map(|m| m.id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["gemini-2.5-pro"]
+    );
+    let received = handle.join().unwrap();
+    assert!(received.starts_with("GET /v1beta/models "));
+    assert!(received
+        .to_lowercase()
+        .contains("authorization: bearer sk-test-not-a-real-key"));
+    let safe = serde_json::to_string(&models::DiscoverySession::new(data).response()).unwrap();
+    assert!(!safe.contains("sk-test"));
+}

@@ -14,7 +14,7 @@ test("Claude Desktop cannot import an incompatible alias through bulk selection"
 });
 
 test("dedicated media and embedding models are not selectable as chat models", () => {
-  for (const id of ["gpt-image-1", "dall-e-3", "whisper-1", "tts-1", "text-embedding-3-large", "sora-2", "grok-imagine-image", "grok-imagine-video", "grok-voice", "xai/grok-imagine-image", "xai/grok-voice"]) {
+  for (const id of ["gemini-2.5-flash-image", "gemini-2.5-flash-preview-tts", "gemini-live-2.5-flash-preview", "imagen-4", "veo-3", "gpt-image-1", "dall-e-3", "whisper-1", "tts-1", "text-embedding-3-large", "sora-2", "grok-imagine-image", "grok-imagine-video", "grok-voice", "xai/grok-imagine-image", "xai/grok-voice"]) {
     for (const client of clients.map((item) => item.id)) {
       assert.equal(modelSelectable(client, id), false, `${client} must reject ${id}`);
     }
@@ -32,5 +32,11 @@ test("dedicated media and embedding models are not selectable as chat models", (
  });
 
 test("client cards follow Codex, Claude, Grok reading order", () => {
-  assert.deepEqual(families.map(family => family.id), ["codex", "claude", "grok"]);
+  assert.deepEqual(families.map(family => family.id), ["codex", "claude", "gemini", "grok"]);
+});
+
+test("Gemini CLI is distinct and only offers Gemini chat models", () => {
+ assert.equal(clientFamily("gemini"), "gemini");
+ assert.equal(modelSelectable("gemini", "gemini-2.5-pro"), true);
+ for (const id of ["gpt-5", "gemini-2.5-flash-image", "gemini-2.5-flash-preview-tts", "gemini-embedding-001"]) assert.equal(modelSelectable("gemini", id), false);
 });

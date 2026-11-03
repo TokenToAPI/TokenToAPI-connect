@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+
+- Add Gemini CLI native API discovery, default-model setup, safe handoff, backup and exact restore.
+- Filter dedicated Gemini media and live/audio models from coding clients.
+
 ## v0.2.1 - 2026-10-22
 
 - Preserve Claude Code MCP Tool Search settings by default and allow users to explicitly enable or disable the feature for Claude Code Terminal and VS Code.

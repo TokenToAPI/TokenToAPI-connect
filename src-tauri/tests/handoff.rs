@@ -2,7 +2,7 @@ use std::{
     io::{Read, Write},
     net::TcpListener,
 };
-use tokentoapi_connect_lib::handoff;
+use tokentoapi_connect_lib::{handoff, models};
 
 #[tokio::test]
 async fn redeemed_handoff_imports_efforts_and_restores_both_codex_clients() {
@@ -273,4 +273,24 @@ fn authoritative_client_choices_support_mixed_and_code_only_groups() {
             .is_ok());
         assert!(state.discovery_input(&pending.request_id, blocked).is_err());
     }
+}
+
+#[tokio::test]
+async fn gemini_handoff_advertises_both_capabilities_and_accepts_native_client() {
+    let body = r#"{"code":0,"data":{"version":1,"providerName":"TokenToAPI","baseUrl":"https://example.test","apiKey":"fixture-only","suggestedClient":"gemini","allowedClients":["gemini"]}}"#;
+    let (root, thread) = server("200 OK", "", body);
+    let url = format!(
+        "tokentoapi-connect://v1/import?issuer={root}&code={}",
+        "A".repeat(43)
+    );
+    let setup = handoff::redeem(&handoff::parse(&url, true).unwrap(), true)
+        .await
+        .unwrap();
+    assert_eq!(setup.suggested_client, models::Client::Gemini);
+    assert_eq!(setup.allowed_clients, vec![models::Client::Gemini]);
+    assert!(thread
+        .join()
+        .unwrap()
+        .to_lowercase()
+        .contains("x-tokentoapi-connect-capabilities: grok-cli,gemini-cli"));
 }
