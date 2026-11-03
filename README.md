@@ -4,17 +4,17 @@
 
 A simple local API configurator. Choose a gateway, pick Claude, Codex or Grok CLI, enter your API Key, select the models you need, and import.
 
-**v0.2.1** · [Downloads](https://github.com/TokenToAPI/TokenToAPI-connect/releases/latest) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
+**v0.2.2** · [Downloads](https://github.com/TokenToAPI/TokenToAPI-connect/releases/latest) · [Report an issue](https://github.com/TokenToAPI/TokenToAPI-connect/issues) · [MIT License](LICENSE)
 
 ## Downloads
 
 | Platform | Download | How to open |
 | --- | --- | --- |
-| macOS 12+ · Apple Silicon (arm64) | [macOS Apple Silicon ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.2.1/TokenToAPI-Connect-0.2.1-macOS-arm64.zip) | Extract, then open `TokenToAPI Connect.app`; you can also move it to Applications |
-| Windows 10/11 · x64 | [Windows x64 setup installer](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.2.1/TokenToAPI-Connect-0.2.1-Windows-x64-setup.exe) | Install for your Windows user, then open Connect; future updates install in the app |
-| Windows 10/11 · x64 · portable alternative | [Windows x64 portable ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.2.1/TokenToAPI-Connect-0.2.1-Windows-x64-portable.zip) | Extract the entire ZIP into a permanent folder, then open `TokenToAPI Connect.exe` once |
+| macOS 12+ · Apple Silicon (arm64) | [macOS Apple Silicon ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.2.2/TokenToAPI-Connect-0.2.2-macOS-arm64.zip) | Extract, then open `TokenToAPI Connect.app`; you can also move it to Applications |
+| Windows 10/11 · x64 | [Windows x64 setup installer](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.2.2/TokenToAPI-Connect-0.2.2-Windows-x64-setup.exe) | Install for your Windows user, then open Connect; future updates install in the app |
+| Windows 10/11 · x64 · portable alternative | [Windows x64 portable ZIP](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.2.2/TokenToAPI-Connect-0.2.2-Windows-x64-portable.zip) | Extract the entire ZIP into a permanent folder, then open `TokenToAPI Connect.exe` once |
 
-Downloads come directly from [GitHub Releases](https://github.com/TokenToAPI/TokenToAPI-connect/releases/latest). Verify them with the release's [SHA-256 checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.2.1/SHA256SUMS.txt). See [verification notes](VERIFICATION.md) for test coverage.
+Downloads come directly from [GitHub Releases](https://github.com/TokenToAPI/TokenToAPI-connect/releases/latest). Verify them with the release's [SHA-256 checksums](https://github.com/TokenToAPI/TokenToAPI-connect/releases/download/v0.2.2/SHA256SUMS.txt). See [verification notes](VERIFICATION.md) for test coverage.
 
 No Node.js or Rust installation is required at runtime. The macOS package is for Apple Silicon Macs and uses an ad-hoc signature; it has not yet completed Apple Developer ID signing or notarization, so macOS may require confirmation before opening it. Windows uses the system WebView2 Runtime; if it is missing, install it from the [Microsoft website](https://developer.microsoft.com/microsoft-edge/webview2/) as prompted by the app. Checksums are in the release's `SHA256SUMS.txt`. The Windows portable package does not require installation or the VC++ Redistributable, but it is not yet publisher-signed, so Windows may show an unknown-publisher or SmartScreen warning.
 
@@ -58,10 +58,10 @@ On **API Keys**, the upper-right **Download Connect** menu offers macOS and
 Windows downloads, and **Import to Connect** stays first in each key row. The
 gateway resolves the latest stable Connect release when a download is requested. Downloads
 are no longer duplicated inside the import dialog. This layout was deployed
-and verified on 2026-10-29 with gateway v0.2.19.2; no new Connect app release
+and verified on 2026-10-29 with gateway v0.2.29.2; no new Connect app release
 is required.
 
-Connect v0.2.1 includes the platform's **Import to Connect** handoff and the
+Connect v0.2.2 includes the platform's **Import to Connect** handoff and the
 Codex context / thinking, image-capability, and credential compatibility fixes. The platform handoff requires
 the matching platform integration; v0.1.3 and later can handle these links.
 The matching platform update is deployed. On Windows, opening the extracted app once registers the import link for your user account. If you move its folder, open the app again before importing.
@@ -82,7 +82,7 @@ compatible with the key's protocol; unsupported native clients use manual setup.
 ### Repair image attachments in Codex
 
 If Codex reports **“This model does not support image inputs”** for GPT-6 Astra
-or another supported GPT-6.x / GPT-5.6 model, install Connect **v0.2.1**, fetch
+or another supported GPT-6.x / GPT-5.6 model, install Connect **v0.2.2**, fetch
 the models again, and click **Import**. Then fully quit and reopen Codex and
 start a new chat. Updating Connect alone does not refresh an existing catalog.
 
@@ -250,7 +250,7 @@ pnpm tauri build --bundles deb
 pnpm tauri build --bundles rpm
 ```
 
-Linux GUI packages should be built on Linux rather than cross-compiled from macOS or Windows. The official `v0.2.1` release provides macOS arm64 and Windows x64 packages; Linux users should build from source until a Linux release artifact is published.
+Linux GUI packages should be built on Linux rather than cross-compiled from macOS or Windows. The official `v0.2.2` release provides macOS arm64 and Windows x64 packages; Linux users should build from source until a Linux release artifact is published.
 
 ### Packaging scripts
 
@@ -269,7 +269,7 @@ Artifacts go to `release/`. The Windows script skips the installer and checks th
 
 `.cargo/config.toml` controls fully static CRT linking; `tauri.windows.conf.json` disables Tauri's own mixed-CRT override to avoid conflicts.
 
-Run release checks locally by default. Build and validate Windows packages on a native Windows machine; cross-compilation on a Mac does not verify Windows runtime behavior. The v0.2.1 Windows package was cross-compiled on macOS and passed native Windows installation, upgrade from v0.2.0, relaunch, settings preservation, and Help-menu update checks. See [verification notes](VERIFICATION.md) for evidence and scope. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
+Run release checks locally by default. Build and validate Windows packages on a native Windows machine; cross-compilation on a Mac does not verify Windows runtime behavior. The v0.2.2 Windows package was cross-compiled on macOS and passed native Windows installation, upgrade from v0.2.0, relaunch, settings preservation, and Help-menu update checks. See [verification notes](VERIFICATION.md) for evidence and scope. The build scripts live in `scripts/` (`build-macos.mjs`, `build-windows-portable.mjs`), artifacts go to `release/`, and checksums are in `SHA256SUMS.txt`.
 
 ## Isolated testing
 
@@ -301,3 +301,11 @@ The platform offers Grok CLI to Connect v0.2.0+ for Responses-compatible keys.
 Older Connect versions retain their existing client list. Image support follows
 the gateway's declared capabilities; an unknown or text-only model is not
 automatically advertised as a vision model.
+
+## Gemini CLI (v0.2.2)
+
+Choose Gemini → Terminal, fetch models with a Gemini-group key, and select one default chat model. The native Gemini API is used. Restart `gemini`; use `/model MODEL_ID` to select another model available to your key. The built-in CLI picker is not replaced.
+
+Connect backs up and updates `.gemini/settings.json` and `.gemini/.env`; existing MCP servers, preferences and OAuth files are preserved. `GEMINI_CLI_HOME` is respected. Use **Use original config** to restore both files exactly. Existing shell variables, project `.env`/settings, folder trust and organization policies can override these user settings. Complex multiline environment files are refused without writes. Website import for Gemini keys requires the companion gateway update.
+
+Configuration follows the [official Gemini CLI documentation](https://geminicli.com/docs/reference/configuration/). Native request behavior is tested with Gemini CLI 0.46.0 and a loopback API; this does not establish paid upstream inference or native Windows Gemini CLI behavior.

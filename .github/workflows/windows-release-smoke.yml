@@ -5,11 +5,11 @@ on:
       tag:
         description: Published or draft release tag to test
         required: true
-        default: v0.2.1
+        default: v0.2.2
       previous_tag:
         description: Previous stable version to upgrade from
         required: true
-        default: v0.2.0
+        default: v0.2.1
 permissions:
   # GitHub requires write access to read draft releases. This workflow never
   # writes release metadata and has no access to the updater signing key.
@@ -104,3 +104,32 @@ jobs:
           if ($app.HasExited) { throw "Native update menu caused app exit" }
           Stop-Process -Id $app.Id -Force
           Write-Output "Installer, native launch, version-to-version update, settings preservation, and native Help update command passed."
+
+  gemini-compatibility:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Select release Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal
+      - name: Test configuration, backup and restore natively
+        run: cargo +1.99.1 test --manifest-path src-tauri/Cargo.toml --no-default-features --locked
+      - name: Install official Gemini CLI fixture
+        run: npm install --prefix gemini-fixture @google/gemini-cli@0.46.0
+      - name: Verify native Gemini requests using generated settings
+        shell: pwsh
+        env:
+          RUSTUP_TOOLCHAIN: 1.99.1
+        run: |
+          $cli = (Resolve-Path 'gemini-fixture/node_modules/@google/gemini-cli/bundle/gemini.js').Path
+          python scripts/verify-gemini-runtime.py --gemini node --gemini-script $cli --output gemini-windows-runtime.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gemini-windows-runtime
+          path: gemini-windows-runtime.json

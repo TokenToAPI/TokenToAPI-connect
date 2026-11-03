@@ -48,3 +48,17 @@ it.each([
  await act(async()=>{select.value='claude-vscode';select.dispatchEvent(new Event('change',{bubbles:true}));});await settle();
  expect(native.discover).toHaveBeenLastCalledWith('handoff','claude-vscode');
 });
+
+it('imports a Gemini handoff with one default model and no Claude options', async () => {
+ native.accept.mockResolvedValue({requestId:'handoff',providerName:'Fixture',baseUrl:'https://tokentoapi.com',suggestedClient:'gemini',allowedClients:['gemini'],gatewayNeedsReview:false});
+ native.discover.mockResolvedValue({discoveryId:'gemini-discovery',client:'gemini',baseUrl:'https://tokentoapi.com',models:[{id:'gemini-2.5-pro',name:'Gemini Pro'},{id:'gemini-2.5-flash',name:'Gemini Flash'}]});
+ native.pending={requestId:'handoff',issuer:'https://tokentoapi.com',knownIssuer:true}; await act(async()=>native.listener()); await settle();
+ expect(native.discover).toHaveBeenLastCalledWith('handoff','gemini');
+ expect(host.textContent).toContain('Choose the default Gemini CLI model');
+ const radios=host.querySelectorAll('.model-list input[type="radio"]'); expect(radios).toHaveLength(2);
+ expect((radios[0] as HTMLInputElement).checked).toBe(true);
+ await act(async()=> (radios[1] as HTMLInputElement).click());
+ expect((radios[0] as HTMLInputElement).checked).toBe(false);
+ expect((radios[1] as HTMLInputElement).checked).toBe(true);
+ expect(host.textContent).not.toContain('MCP Tool Search');
+});

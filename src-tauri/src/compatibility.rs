@@ -224,11 +224,13 @@ pub fn inspect(paths: &Paths, client: Client) -> Compatibility {
     }
     let mut result = Compatibility::default();
     match client {
-        Client::Claude | Client::Codex | Client::Grok => {
+        Client::Claude | Client::Codex | Client::Grok | Client::Gemini => {
             if let Some(path) = executable(
                 paths,
                 if client == Client::Claude {
                     "claude"
+                } else if client == Client::Gemini {
+                    "gemini"
                 } else if client == Client::Grok {
                     "grok"
                 } else {
@@ -396,6 +398,7 @@ pub fn next_steps(client: Client) -> Vec<String> {
         Client::Claude => vec!["Exit the current Claude Code process and run claude again in a new terminal.".into(), "Run /status to confirm the API address; use /model to check the model. Upgrade first if you are on an old version.".into()],
         Client::ClaudeVscode => vec!["Run Developer: Reload Window in VS Code, then start a new Claude Code session.".into(), "Confirm the default VS Code Profile is used; workspace settings may override user settings.".into()],
         Client::CodexDesktop => vec!["Quit the Codex desktop app completely, reopen it, and start a new local session.".into(), "Confirm API Key sign-in, the TokenToAPI Connect service and the selected model; existing sessions or cloud tasks will not migrate automatically.".into()],
+        Client::Gemini => vec!["Exit Gemini CLI and run gemini again from a trusted project.".into(), "The selected default model uses the gateway native Gemini API. Shell variables, project .env/settings and managed policies can override these user settings; verify the address and use /model MODEL_ID for another available model.".into()],
         Client::Codex => vec!["Exit the current Codex process and run codex again.".into(), "Run /status to confirm the TokenToAPI Connect service and the selected model. The desktop app also needs a restart to take effect.".into()],
     }
 }

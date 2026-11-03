@@ -1,3 +1,4 @@
+import { ClientIcon } from "./ClientIcon";
 import {
   useEffect,
   useRef,
@@ -75,29 +76,6 @@ function BrandIcon({ className = "" }: { className?: string }) {
       alt=""
       draggable={false}
     />
-  );
-}
-function ClientIcon({ client, size = 24 }: { client: Client; size?: number }) {
-  return clientFamily(client) !== "claude" ? (
-    <Terminal size={size} strokeWidth={1.6} />
-  ) : (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      {[0, 30, 60, 90, 120, 150].map((angle) => (
-        <path
-          key={angle}
-          d="M12 2.5V21.5"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          transform={`rotate(${angle} 12 12)`}
-        />
-      ))}
-    </svg>
   );
 }
 function Modal({
@@ -483,7 +461,7 @@ export default function App() {
       selectModels(
         current,
         checked
-          ? [...current.ids, id]
+          ? client === "gemini" ? [id] : [...current.ids, id]
           : current.ids.filter((value) => value !== id),
       ),
     );
@@ -787,7 +765,7 @@ export default function App() {
                             changeClient(
                               item.id === "codex"
                                 ? "codex-desktop"
-                                : item.id === "grok" ? "grok" : "claude-desktop",
+                                : item.id === "gemini" ? "gemini" : item.id === "grok" ? "grok" : "claude-desktop",
                             )
                           }
                           value={item.id}
@@ -937,6 +915,7 @@ export default function App() {
               )}
               {step === 3 && discovery && (
                 <div className="step-content model-content">
+                  {client === "gemini" && <p className="inline-note">Choose the default Gemini CLI model. To switch later, use /model MODEL_ID in Gemini CLI. Its built-in model menu is managed by Gemini CLI.</p>}
                   <div className="model-toolbar">
                     <div className="search-field">
                       <Search size={16} />
@@ -959,6 +938,7 @@ export default function App() {
                     </span>
                     <button
                       className="text-button"
+                      hidden={client === "gemini"}
                       disabled={disabled || !selectableMatching.length}
                       onClick={() =>
                         setSelection((current) =>
@@ -1003,7 +983,8 @@ export default function App() {
                         >
                           <label>
                             <input
-                              type="checkbox"
+                              type={client === "gemini" ? "radio" : "checkbox"}
+                              name={client === "gemini" ? "gemini-model" : undefined}
                               checked={checked}
                               disabled={
                                 !modelSelectable(client, model.id) ||
@@ -1085,7 +1066,7 @@ export default function App() {
                   </div>
                   <p className="fine-print">
                     The model list comes from this key; requests require the gateway to support the{" "}
-                    {family !== "claude" ? "Responses" : "Messages"} API.
+                    {family === "gemini" ? "Gemini" : family !== "claude" ? "Responses" : "Messages"} API.
                   </p>
                   {selection.ids.length > 0 && (
                     <SetupOptionsPanel

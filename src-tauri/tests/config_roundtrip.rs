@@ -15,12 +15,14 @@ fn input(client: Client) -> ValidatedInput {
         model: match client {
             Client::Claude | Client::ClaudeDesktop | Client::ClaudeVscode => "claude-sonnet-test",
             Client::Grok => "grok-test",
+            Client::Gemini => "gemini-2.5-pro",
             Client::Codex | Client::CodexDesktop => "gpt-test-codex",
         }
         .into(),
         selected_models: vec![match client {
             Client::Claude | Client::ClaudeDesktop | Client::ClaudeVscode => "claude-sonnet-test",
             Client::Grok => "grok-test",
+            Client::Gemini => "gemini-2.5-pro",
             Client::Codex | Client::CodexDesktop => "gpt-test-codex",
         }
         .into()],
@@ -451,10 +453,9 @@ fn vscode_config_directory_controls_import_preview_and_restore_target() {
     let home = tempfile::tempdir().unwrap();
     let paths = Paths::for_home(home.path());
     let custom = home.path().join("claude-special");
-    let original_settings = format!(
-        r#"{{"claudeCode.environmentVariables":[{{"name":"CLAUDE_CONFIG_DIR","value":"{}"}}]}}"#,
-        custom.display()
-    );
+    let original_settings = serde_json::json!({
+        "claudeCode.environmentVariables": [{"name": "CLAUDE_CONFIG_DIR", "value": custom.to_string_lossy()}]
+    }).to_string();
     storage::atomic_write(
         &paths.target(FileKind::ClaudeVscode),
         original_settings.as_bytes(),

@@ -85,10 +85,12 @@ impl SetupOptions {
         } else if self.web_search != WebSearchMode::Preserve {
             return Err("The web search option is only available for Codex.".into());
         }
-        if matches!(input.client, Client::ClaudeDesktop | Client::Grok)
-            && (!self.claude_models.is_empty()
-                || self.artifact_mode != ArtifactMode::Preserve
-                || self.tool_search != ToolSearchMode::Preserve)
+        if matches!(
+            input.client,
+            Client::ClaudeDesktop | Client::Grok | Client::Gemini
+        ) && (!self.claude_models.is_empty()
+            || self.artifact_mode != ArtifactMode::Preserve
+            || self.tool_search != ToolSearchMode::Preserve)
         {
             return Err(
                 "This client does not use Claude Code purpose models, Artifact, or Tool Search settings."
