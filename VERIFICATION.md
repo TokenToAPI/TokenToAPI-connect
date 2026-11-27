@@ -1,11 +1,10 @@
-# macOS app icon
+# v0.2.3 verification — 2026-11-28
 
-The v0.2.2 macOS ZIP contained an ICNS whose 32×32 representation decoded
-into multicolored noise. The standalone artwork decoded correctly. The icon
-generator now uses the locked Tauri CLI to create the macOS asset. Run
-`pnpm test:ui` on macOS to check native decoding against the source artwork,
-or set `CONNECT_MACOS_ICON` to the icon inside a packaged app to verify the
-bundle.
+- Apple's native decoder reproduced the scrambled 32×32 image from the checksum-verified v0.2.2 Mac package. It decoded the replacement at 16×16, 32×32 and 128×128 at both 1× and 2×. The v0.2.3 ZIP and updater archive contain byte-identical app files and pass strict ad-hoc signature verification.
+- A frozen pnpm install, 22 UI/helper tests, 11 lifecycle tests, TypeScript, the production frontend build, 107 Rust core/configuration tests, Rust formatting and desktop Clippy passed on macOS.
+- Both updater signatures and all three local macOS artifact and upgrade tests passed. They exercise isolated v0.2.2 bundles, backup preservation, and rejection of tampering, version substitution and downgrades.
+- The Windows installer passed native install, upgrade from v0.2.2, relaunch, settings preservation and Help-menu checks. All 108 native Windows Rust tests and the Gemini CLI 0.46.0 loopback compatibility check passed. The Windows portable package passed static x64 GUI and runtime-dependency checks. [Windows acceptance run](https://github.com/TokenToAPI/TokenToAPI-connect/actions/runs/46045233089)
+- On macOS, run `pnpm test:ui` to test the checked-in icon. To test a packaged app, point `CONNECT_MACOS_ICON` at its `Contents/Resources/icon.icns` and run `node --experimental-strip-types --test tests/macos-icon.test.ts`.
 
 # v0.2.2 verification — 2026-11-03
 
