@@ -43,6 +43,10 @@ upstream inference. Native Grok on Windows is not independently exercised.
 Command-line flags, environment overlays and managed organization policies may
 still override local configuration.
 
+## macOS app icon
+
+Connect v0.2.3 fixes small app icons rendered by macOS. On macOS 12 or newer with Apple Silicon, update Connect and restart it to load the corrected icon.
+
 ## Gemini CLI (v0.2.2, verified 2026-11-03)
 
 Gemini uses the native `/v1beta` API. Connect configures one default chat model, Gemini API-key authentication and gateway environment values. MCP servers, unrelated preferences and OAuth files are preserved; settings and environment are backed up and restored exactly. `GEMINI_CLI_HOME` is respected. Project settings/environment, inherited variables, folder trust and organization policies can override user setup. Complex multiline environment files are refused without partial writes. The built-in model picker is owned by Gemini CLI. Native macOS and Windows Gemini CLI 0.46.0 requests passed with adapter-generated settings and a loopback API; paid upstream inference was not tested.
