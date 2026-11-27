@@ -1,3 +1,12 @@
+# macOS app icon
+
+The v0.2.2 macOS ZIP contained an ICNS whose 32×32 representation decoded
+into multicolored noise. The standalone artwork decoded correctly. The icon
+generator now uses the locked Tauri CLI to create the macOS asset. Run
+`pnpm test:ui` on macOS to check native decoding against the source artwork,
+or set `CONNECT_MACOS_ICON` to the icon inside a packaged app to verify the
+bundle.
+
 # v0.2.2 verification — 2026-11-03
 
 - 107 Rust tests on macOS and 108 on native Windows passed. Local TypeScript, 21 helper/UI tests, 11 lifecycle tests, strict desktop Clippy, formatting and production web builds passed.

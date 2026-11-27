@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Generate the Tauri desktop icons from the TokenToAPI brand asset."""
 from pathlib import Path
+from shutil import copyfile
+from subprocess import run
+from tempfile import TemporaryDirectory
+
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -35,43 +39,14 @@ ico.save(
 )
 print(f"{'icon.ico':<48} multi-size")
 
-# .icns (macOS bundle) -- iconutil is unavailable off macOS, so write the
-# container directly. Each entry is an ICNS-typed PNG.
-ICNS_TYPES = [
-    (16, b"icp4"),
-    (32, b"icp5"),
-    (64, b"icp6"),
-    (128, b"ic07"),
-    (256, b"ic08"),
-    (512, b"ic09"),
-    (1024, b"ic10"),
-]
-
-
-def png_chunk(tag: bytes, payload: bytes) -> bytes:
-    import struct
-
-    body = tag + payload
-    return struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib_crc(body))
-
-
-def zlib_crc(data: bytes) -> int:
-    import zlib
-
-    return zlib.crc32(data) & 0xFFFFFFFF
-
-
-import io
-
-entries = b""
-for size, tag in ICNS_TYPES:
-    buffer = io.BytesIO()
-    square(size).save(buffer, "PNG", optimize=True)
-    png_bytes = buffer.getvalue()
-    # ICNS entry length includes the 8-byte tag+length header itself.
-    entries += tag + (8 + len(png_bytes)).to_bytes(4, "big") + png_bytes
-header = b"icns" + (8 + len(entries)).to_bytes(4, "big")
-(ICONS / "icon.icns").write_bytes(header + entries)
-print(f"{'icon.icns':<48} {len(ICNS_TYPES)} sizes")
+# Tauri writes the small icon representations and masks that macOS expects.
+with TemporaryDirectory() as output:
+    run(
+        ["node", str(ROOT / "node_modules/@tauri-apps/cli/tauri.js"), "icon",
+         str(SOURCE), "--output", output],
+        cwd=ROOT,
+        check=True,
+    )
+    copyfile(Path(output) / "icon.icns", ICONS / "icon.icns")
 
 print("\nAll TokenToAPI desktop icons generated.")
