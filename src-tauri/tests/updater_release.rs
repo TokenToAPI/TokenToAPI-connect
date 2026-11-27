@@ -103,11 +103,13 @@ async fn previous_release_checks_downloads_and_installs_next_signed_version() {
         previous_config["plugins"]["updater"]["pubkey"],
         config["plugins"]["updater"]["pubkey"]
     );
+    let mut updater_config = config["plugins"]["updater"].clone();
+    updater_config["dangerousInsecureTransportProtocol"] = Value::Bool(true);
     context
         .config_mut()
         .plugins
         .0
-        .insert("updater".into(), config["plugins"]["updater"].clone());
+        .insert("updater".into(), updater_config);
     let app = mock_builder()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .build(context)
