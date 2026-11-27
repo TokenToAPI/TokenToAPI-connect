@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3
+
+- Fix the scrambled TokenToAPI Connect app icon shown at small sizes on macOS.
+
 ## 0.2.2
 
 - Add Gemini CLI native API discovery, default-model setup, safe handoff, backup and exact restore.
